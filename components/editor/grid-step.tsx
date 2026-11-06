@@ -39,7 +39,7 @@ export function GridStep({ game }: { game: GameSlug }) {
           <m.span
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="grid size-16 place-items-center rounded-3xl bg-primary-soft text-primary"
+            className="grid size-16 place-items-center rounded-xl bg-primary-soft text-primary"
           >
             <LayoutGrid className="size-7" aria-hidden />
           </m.span>
@@ -67,7 +67,7 @@ export function GridStep({ game }: { game: GameSlug }) {
             transition={{ type: "spring", stiffness: 400, damping: 26 }}
             className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 sm:right-6 lg:hidden"
           >
-            <Button size="lg" onClick={openPicker} className="rounded-full shadow-soft-lg">
+            <Button size="lg" onClick={openPicker} className="rounded-xl shadow-soft-lg">
               <Plus aria-hidden />
               {g.addSkin}
             </Button>

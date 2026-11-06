@@ -1,23 +1,23 @@
 /**
  * ดึงข้อมูล + ภาพสกินจริงมาเก็บในโปรเจค
  *
- *   npm run import:skins              # ทั้ง 2 เกม
- *   npm run import:skins -- rov       # เฉพาะ ROV
- *   npm run import:skins -- mlbb --limit 5   # ทดสอบ 5 ฮีโร่แรก
+ *   npm run import:skins                     # สกิน + ระดับเมต้าฮีโร่ MLBB
+ *   npm run import:skins -- --limit 5        # ทดสอบ 5 ฮีโร่แรก
+ *   npm run import:skins -- --rankings-only  # อัปเดตเฉพาะระดับเมต้า + ตราแรงค์ (แนะนำรันทุกสัปดาห์)
  *
  * ผลลัพธ์
  *   data/catalog/<game>.json      — รายชื่อฮีโร่/สกิน/ระดับ (lib/catalog.ts อ่านไฟล์นี้)
+ *   data/catalog/mlbb-rankings.json — ระดับเมต้าฮีโร่ S+…C + winrate/banrate (lib/rankings.ts)
+ *   public/ranks/<rank>.webp       — ตราแรงค์ผู้เล่น Warrior…Mythic Immortal (lib/ranks.ts)
  *   public/skins/<game>/<file>.webp — ภาพการ์ดสกิน (resize + แปลง webp แล้ว)
  *   .cache/skins-src/             — ไฟล์ดิบที่ดาวน์โหลด (ไม่ commit, รันซ้ำไม่ต้องโหลดใหม่)
  *
  * แหล่งข้อมูล
- *   ROV  : github.com/dxawdc/rov-skins (ข้อมูลเซิร์ฟเวอร์ไทย, sync จาก spreadsheet ของผู้ดูแล)
  *   MLBB : mlbbdex.com API (ข้อมูล CC BY-SA จาก Mobile Legends wiki) — จำกัด 90 req/นาที
- * ภาพสกินเป็นลิขสิทธิ์ของ Garena / Moonton
+ * ภาพสกินเป็นลิขสิทธิ์ของ Moonton
  *
  * Phase 4: เปลี่ยนปลายทางจาก JSON → MongoDB และภาพ → object storage
  */
-import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -102,53 +102,6 @@ async function pool<T>(items: T[], n: number, fn: (item: T, i: number) => Promis
 
 const validTiers = (game: LibraryGame) => new Set(GAME_TIERS[game].map((t) => t.code));
 
-// ───────────────────────── ROV ─────────────────────────
-type RovSkin = { id: string; heroName: string; skinName: string; quality: string; qualityTag?: string; poster?: { status: string; local?: string } };
-
-async function importRov(limit?: number): Promise<CatalogFile> {
-  const repo = path.join(CACHE, "rov-skins");
-  if (!existsSync(repo)) {
-    console.log("• ROV: clone dxawdc/rov-skins (เฉพาะ data + images/skins)");
-    await mkdir(CACHE, { recursive: true });
-    execFileSync("git", ["clone", "--depth", "1", "--filter=blob:none", "--sparse", "https://github.com/dxawdc/rov-skins.git", repo], { stdio: "inherit" });
-    execFileSync("git", ["-C", repo, "sparse-checkout", "set", "public/data", "public/images/skins"], { stdio: "inherit" });
-  } else {
-    console.log("• ROV: ใช้ไฟล์ใน cache (ลบ .cache/skins-src/rov-skins เพื่อโหลดใหม่)");
-  }
-
-  const raw = JSON.parse(await readFile(path.join(repo, "public/data/skins.json"), "utf8")) as RovSkin[];
-  const tiers = validTiers("rov");
-  const heroIds = new Map<string, string>();
-  const skins: CatalogFile["skins"] = [];
-  let skipped = 0;
-
-  const rows = raw.filter((s) => s.poster?.status === "ok" && s.poster.local);
-  const heroNames = [...new Set(rows.map((s) => s.heroName))];
-  const allowHeroes = new Set(limit ? heroNames.slice(0, limit) : heroNames);
-
-  await pool(rows.filter((s) => allowHeroes.has(s.heroName)), 8, async (s) => {
-    const file = slugify(s.id);
-    const src = path.join(repo, "public", s.poster!.local!.split("?")[0]);
-    if (!existsSync(src) || !tiers.has(s.quality)) return void skipped++;
-    try {
-      await writeCard(await readFile(src), path.join(ROOT, "public/skins/rov", `${file}.webp`), 300);
-    } catch {
-      return void skipped++;
-    }
-    if (!heroIds.has(s.heroName)) heroIds.set(s.heroName, slugify(s.heroName));
-    skins.push({ f: file, h: heroIds.get(s.heroName)!, n: s.skinName, t: s.quality, l: s.qualityTag || undefined });
-  });
-
-  if (skipped) console.log(`  ⚠ ข้าม ${skipped} สกิน (ไม่มีไฟล์ภาพ/ระดับไม่รู้จัก/ไฟล์เสีย)`);
-  return {
-    game: "rov",
-    source: "github.com/dxawdc/rov-skins",
-    generatedAt: new Date().toISOString(),
-    heroes: [...heroIds].map(([name, id]) => ({ id, name })),
-    skins: skins.sort((a, b) => compareText(a.f, b.f)),
-  };
-}
-
 // ───────────────────────── MLBB ─────────────────────────
 type MlbbHeroLite = { slug: string; name: string };
 type MlbbHero = {
@@ -226,18 +179,50 @@ async function importMlbb(limit?: number): Promise<CatalogFile> {
   };
 }
 
+// ───────────────────────── MLBB rankings (ระดับเมต้าฮีโร่) ─────────────────────────
+type RankingRow = { slug: string; name: string; tier: string; winRate: number; banRate: number; pickRate: number; lowSample?: boolean };
+
+async function importRankings() {
+  console.log("• MLBB: ดึงระดับเมต้าฮีโร่ (/api/v1/rankings)");
+  // ไม่ใช้ cache — อยากได้ข้อมูลล่าสุดทุกครั้ง
+  const json = (await (await fetchWithRetry(`${MLBB}/api/v1/rankings`)).json()) as {
+    data: { measuredAt: string; heroes: RankingRow[] };
+    source?: { name: string; url: string; license: string };
+  };
+  const out = {
+    measuredAt: json.data.measuredAt,
+    source: json.source ?? { name: "Mobile Legends Wiki", url: "https://mobilelegends.fandom.com", license: "CC BY-SA" },
+    heroes: json.data.heroes.map((h) => ({ id: h.slug, t: h.tier, wr: h.winRate, br: h.banRate, pr: h.pickRate, low: h.lowSample || undefined })),
+  };
+  await writeFile(path.join(ROOT, "data/catalog/mlbb-rankings.json"), JSON.stringify(out));
+  console.log(`✓ rankings: ${out.heroes.length} ฮีโร่ (วัดเมื่อ ${out.measuredAt})\n`);
+}
+
+// ───────────────────────── MLBB rank emblems (ตราแรงค์ผู้เล่น) ─────────────────────────
+export const RANK_IDS = ["warrior", "elite", "master", "grandmaster", "epic", "legend", "mythic", "mythic-honor", "mythic-glory", "mythic-immortal"] as const;
+
+async function importRankEmblems() {
+  console.log("• MLBB: ดึงตราแรงค์ (/visuels/rangs)");
+  const dir = path.join(CACHE, "mlbb", "rangs");
+  for (const id of RANK_IDS) {
+    const buf = await cached(`${MLBB}/visuels/rangs/${id}.webp`, path.join(dir, `${id}.webp`));
+    await mkdir(path.join(ROOT, "public/ranks"), { recursive: true });
+    await sharp(buf, { failOn: "error" }).resize({ width: 192, height: 192, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toFile(path.join(ROOT, "public/ranks", `${id}.webp`));
+    await sleep(250);
+  }
+  console.log(`✓ ranks: ${RANK_IDS.length} ตรา → public/ranks\n`);
+}
+
 // ───────────────────────── main ─────────────────────────
 async function main() {
   const args = process.argv.slice(2);
   const li = args.indexOf("--limit");
   const limit = li >= 0 ? Number(args[li + 1]) : undefined;
-  const games = (args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--limit") as LibraryGame[]).filter((g) => g in GAME_TIERS);
-  const targets: LibraryGame[] = games.length ? games : ["rov", "mlbb"];
 
   await mkdir(path.join(ROOT, "data/catalog"), { recursive: true });
-  for (const game of targets) {
+  if (!args.includes("--rankings-only")) {
     const t0 = Date.now();
-    const cat = game === "rov" ? await importRov(limit) : await importMlbb(limit);
+    const cat = await importMlbb(limit);
     // ตัดสกินซ้ำ (แหล่งข้อมูลบางครั้งลงสกินเดียวกันซ้ำ) และฮีโร่ที่ไม่มีสกินเหลือ
     const seenFile = new Set<string>();
     const before = cat.skins.length;
@@ -245,9 +230,11 @@ async function main() {
     if (cat.skins.length < before) console.log(`  ⚠ ตัดสกินซ้ำ ${before - cat.skins.length} รายการ`);
     const used = new Set(cat.skins.map((s) => s.h));
     cat.heroes = cat.heroes.filter((h) => used.has(h.id)).sort((a, b) => compareText(a.name, b.name));
-    await writeFile(path.join(ROOT, `data/catalog/${game}.json`), JSON.stringify(cat));
-    console.log(`✓ ${game}: ${cat.heroes.length} ฮีโร่ / ${cat.skins.length} สกิน (${((Date.now() - t0) / 1000).toFixed(0)}s)\n`);
+    await writeFile(path.join(ROOT, "data/catalog/mlbb.json"), JSON.stringify(cat));
+    console.log(`✓ mlbb: ${cat.heroes.length} ฮีโร่ / ${cat.skins.length} สกิน (${((Date.now() - t0) / 1000).toFixed(0)}s)\n`);
   }
+  await importRankings();
+  await importRankEmblems();
 }
 
 main().catch((e) => {

@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ game: str
 
 const chip = (active: boolean) =>
   cn(
-    "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors",
+    "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3.5 text-sm font-medium transition-colors",
     active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface hover:bg-surface-2",
   );
 
@@ -55,7 +55,7 @@ export default async function AssetsPage({ params, searchParams }: { params: Pro
       </div>
 
       {/* หัวหน้า */}
-      <header className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mt-6 flex flex-col gap-5 rounded-2xl border border-border bg-background p-5 sm:flex-row sm:p-8 sm:items-end sm:justify-between">
         <div>
           <p className="flex items-center gap-2 font-mono text-xs tracking-wider text-muted-foreground">
             <span aria-hidden className="size-1.5 rounded-full bg-primary" />
@@ -86,7 +86,7 @@ export default async function AssetsPage({ params, searchParams }: { params: Pro
       </nav>
 
       {!result ? (
-        /* เกมที่ยังไม่มีคลัง (Free Fire) */
+        /* เกมที่ยังไม่มีคลังภาพ */
         <Card className="mt-8 flex flex-col items-center gap-3 border-dashed p-10 text-center">
           <span className="grid size-14 place-items-center rounded-2xl bg-primary-soft text-primary">
             <Upload className="size-6" aria-hidden />
@@ -112,7 +112,7 @@ export default async function AssetsPage({ params, searchParams }: { params: Pro
                 placeholder={c.search}
                 aria-label={c.searchAria}
                 enterKeyHint="search"
-                className="h-11 w-full rounded-full border border-input bg-surface pr-4 pl-11 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
+                className="h-11 w-full rounded-lg border border-input bg-surface pr-4 pl-11 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
               />
               <button type="submit" className="sr-only">{c.searchSubmit}</button>
             </form>

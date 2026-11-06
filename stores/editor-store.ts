@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { GameSlug } from "@/lib/games";
 import { getCatalog } from "@/lib/catalog";
 import { MAX_SKINS, type TemplateId } from "@/lib/pricing";
+import type { RankId } from "@/lib/ranks";
 
 /**
  * เอกสารที่ undo/redo ได้ — Phase 3 จะเพิ่ม template / decoration เข้ามาใน type นี้
@@ -20,6 +21,8 @@ export type Decoration = {
   tagline: string;
   accent: string;
   coverId: string;
+  /** แรงค์ของไอดี (ตราแรงค์ในเกม) — ไม่เลือก = ไม่แสดงบนป้าย */
+  rank?: RankId;
 };
 
 export const DEFAULT_DECORATION: Decoration = { code: "", heroes: 0, price: 0, winrate: 0, matches: 0, down: 0, honor: 0, tagline: "พร้อมเปลี่ยนเมลทันที", accent: "#fcd34d", coverId: "" };
@@ -32,7 +35,11 @@ export type EditorDoc = {
   /** แบบป้าย (step template) */
   template: TemplateId;
   decoration?: Decoration;
+  /** รูปแบบไฟล์ที่จะดาวน์โหลด (step checkout) — clean = ไม่มีลายน้ำ (ตัดคอยน์), watermark = ฟรีแบบมีลายน้ำ */
+  output?: OutputMode;
 };
+
+export type OutputMode = "clean" | "watermark";
 
 export type GameEditorState = {
   doc: EditorDoc;
@@ -66,13 +73,14 @@ type EditorStore = {
   setCols: (game: GameSlug, cols: number) => void;
   setTemplate: (game: GameSlug, template: TemplateId) => void;
   setDecoration: (game: GameSlug, patch: Partial<Decoration>) => void;
+  setOutput: (game: GameSlug, output: OutputMode) => void;
   setViewCols: (game: GameSlug, cols: number) => void;
   undo: (game: GameSlug) => void;
   redo: (game: GameSlug) => void;
 };
 
 const sameDoc = (a: EditorDoc, b: EditorDoc) =>
-  a.cols === b.cols && a.template === b.template && JSON.stringify(a.decoration) === JSON.stringify(b.decoration) && a.skins.length === b.skins.length && a.skins.every((s, i) => s === b.skins[i]);
+  a.cols === b.cols && a.template === b.template && a.output === b.output && JSON.stringify(a.decoration) === JSON.stringify(b.decoration) && a.skins.length === b.skins.length && a.skins.every((s, i) => s === b.skins[i]);
 
 const dedupe = (ids: string[]) => Array.from(new Set(ids));
 
@@ -153,6 +161,7 @@ export const useEditorStore = create<EditorStore>()(
         setCols: (game, cols) => commit(game, (d) => ({ ...d, cols })),
 
         setTemplate: (game, template) => commit(game, (d) => ({ ...d, template })),
+        setOutput: (game, output) => commit(game, (d) => ({ ...d, output })),
         setDecoration: (game, patch) => commit(game, (d) => ({ ...d, decoration: { ...DEFAULT_DECORATION, ...d.decoration, ...patch } })),
 
         setViewCols: (game, cols) =>

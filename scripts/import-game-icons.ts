@@ -10,7 +10,7 @@ import path from "node:path";
 import sharp from "sharp";
 
 const ROOT = path.resolve(__dirname, "..");
-const APPS = { rov: 1150337432, mlbb: 1160056295, freefire: 1300146617 } as const;
+const APPS = { mlbb: 1160056295 } as const;
 
 async function main() {
   const ids = Object.values(APPS).join(",");

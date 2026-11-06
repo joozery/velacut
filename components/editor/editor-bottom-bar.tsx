@@ -7,11 +7,12 @@ import { ArrowLeft, ArrowRight, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
-import { FREEFIRE_PRICE_PER_POSTER, MIN_SKINS, calcTotal } from "@/lib/pricing";
+import { MIN_SKINS, calcTotal, payableTotal } from "@/lib/pricing";
 import { cn, fmt } from "@/lib/utils";
 import { useEditorStore, useGameEditor } from "@/stores/editor-store";
 import { LayoutSelect } from "./layout-select";
 import { PreviewDialog } from "./preview-dialog";
+import { CheckoutCta } from "./checkout-cta";
 import { useGrid } from "./use-grid";
 import { useEditorStep } from "./use-editor-step";
 
@@ -26,7 +27,12 @@ export function EditorBottomBar() {
   const isLibrary = game.mode === "library";
   const count = hydrated ? skins.length : 0;
   // ราคาแบบไม่มีลายน้ำ = สกิน × 0.3 + ค่าเทมเพลต (ตั้งแต่ step template เป็นต้นไป)
-  const total = isLibrary ? calcTotal(count, step === "grid" ? "none" : doc.template) : FREEFIRE_PRICE_PER_POSTER;
+  // checkout: แบบมีลายน้ำ = ฟรี
+  const total = !isLibrary
+    ? 0
+    : step === "checkout"
+      ? payableTotal(count, doc.template, doc.output)
+      : calcTotal(count, step === "grid" ? "none" : doc.template);
   const isFinal = !isLibrary || !next;
   const missing = Math.max(0, MIN_SKINS - count);
   const blocked = isLibrary && missing > 0;
@@ -94,7 +100,9 @@ export function EditorBottomBar() {
               <span className="hidden sm:inline">{copy.editor.toolbar.preview}</span>
             </Button>
           )}
-          {isFinal ? (
+          {isLibrary && step === "checkout" ? (
+            <CheckoutCta game={game.slug} disabled={blocked || !hydrated} />
+          ) : isFinal ? (
             <Button className="rounded-full px-5" disabled={blocked}>
               <Download aria-hidden />
               {c.pay}

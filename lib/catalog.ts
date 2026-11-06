@@ -5,7 +5,6 @@
 import type { GameSlug } from "./games";
 import { compareText } from "./utils";
 import { getTier, type LibraryGame } from "./tiers";
-import rovData from "@/data/catalog/rov.json";
 import mlbbData from "@/data/catalog/mlbb.json";
 
 type CatalogFile = {
@@ -38,7 +37,7 @@ export type Catalog = {
   heroById: Map<string, Hero>;
 };
 
-const RAW: Record<LibraryGame, CatalogFile> = { rov: rovData, mlbb: mlbbData };
+const RAW: Record<LibraryGame, CatalogFile> = { mlbb: mlbbData };
 
 function build(game: LibraryGame): Catalog {
   const raw = RAW[game];

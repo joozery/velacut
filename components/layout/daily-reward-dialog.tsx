@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Check, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,27 +7,34 @@ import { Badge } from "@/components/ui/badge";
 import { CoinIcon } from "@/components/shared/coin";
 import { copy } from "@/lib/copy";
 import { formatCoins } from "@/lib/format";
-import { DAILY_REWARDS, MOCK_CLAIMED_DAYS } from "@/lib/mock";
+import { DAILY_REWARDS } from "@/lib/mock";
 import { cn, fmt } from "@/lib/utils";
 import { toast } from "@/stores/toast-store";
+import { nextRewardDay, useDailyReward } from "@/stores/daily-reward-store";
 
-export function DailyRewardDialog({ trigger }: { trigger: React.ReactNode }) {
+export function DailyRewardDialog({
+  trigger,
+  open,
+  onOpenChange,
+}: {
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const c = copy.dailyReward;
-  // Phase 5: อ่าน/เขียน DailyClaim จาก server action
-  const [claimed, setClaimed] = useState(MOCK_CLAIMED_DAYS);
-  const [claimedToday, setClaimedToday] = useState(false);
-  const today = MOCK_CLAIMED_DAYS + 1;
+  const { claimed, claimedToday, claim: markClaimed } = useDailyReward();
+  // วันที่ของรางวัลวันนี้ (ก่อนรับ = claimed+1, หลังรับ = claimed)
+  const today = claimedToday ? claimed : nextRewardDay(claimed);
 
   const claim = () => {
     const reward = DAILY_REWARDS[today - 1].reward;
-    setClaimed(today);
-    setClaimedToday(true);
+    markClaimed();
     toast({ title: c.toastTitle, description: fmt(c.toastDesc, { n: formatCoins(reward) }), variant: "success" });
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>{c.title}</DialogTitle>

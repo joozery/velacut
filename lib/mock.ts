@@ -19,15 +19,13 @@ export const MOCK_STATS = {
 };
 
 export const GAME_SKIN_COUNTS: Record<GameSlug, number> = {
-  rov: 1240,
   mlbb: 1680,
-  freefire: 0,
 };
 
 export const SAMPLE_POSTERS: { id: string; game: GameSlug; cols: number; rows: number; template: "none" | "a" | "b" }[] = [
-  { id: "p1", game: "rov", cols: 4, rows: 3, template: "b" },
+  { id: "p1", game: "mlbb", cols: 4, rows: 3, template: "b" },
   { id: "p2", game: "mlbb", cols: 3, rows: 3, template: "a" },
-  { id: "p3", game: "rov", cols: 3, rows: 2, template: "none" },
+  { id: "p3", game: "mlbb", cols: 3, rows: 2, template: "none" },
   { id: "p4", game: "mlbb", cols: 5, rows: 4, template: "b" },
 ];
 

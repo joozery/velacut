@@ -81,7 +81,7 @@ function GridTools({ game }: { game: GameSlug }) {
       <LabeledAction label={t.share} icon={<Share2 aria-hidden />} onClick={share} disabled={!hydrated || empty} />
       <LabeledAction label={t.clear} icon={<Trash2 aria-hidden />} onClick={clear} disabled={!hydrated || empty} />
       {/* จำนวนคอลัมน์ในพื้นที่ทำงาน */}
-      <div className="ml-2 hidden h-9 w-52 shrink-0 items-center gap-2 rounded-full border border-border px-3 md:flex" title={t.columns}>
+      <div className="ml-2 hidden h-9 w-52 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface-2/50 px-3 md:flex" title={t.columns}>
         <Grid2x2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <Slider
           value={[viewCols]}

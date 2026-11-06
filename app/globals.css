@@ -38,6 +38,8 @@
   --shadow-lg: 0 16px 40px rgb(17 17 20 / 0.1), 0 2px 6px rgb(17 17 20 / 0.05);
 
   --radius: 1rem;
+  --accent: #bed5ff;
+  --ink: #121b30;
 }
 
 /* ───────────── Design tokens (dark) ───────────── */
@@ -99,6 +101,8 @@
   --color-warning: var(--warning);
   --color-ring: var(--ring);
   --color-overlay: var(--overlay);
+  --color-accent: var(--accent);
+  --color-ink: var(--ink);
 
   --shadow-soft-sm: var(--shadow-sm);
   --shadow-soft: var(--shadow-md);
@@ -215,3 +219,19 @@ velacut-app {
 @utility enter {
   animation: enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* แถบเวลาของสไลด์ hero (เดินจนเต็มแล้วเปลี่ยนสไลด์) */
+@keyframes hero-progress { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+.hero-progress { transform-origin: left; animation: hero-progress var(--hero-duration, 6500ms) linear forwards; }
+@keyframes hero-zoom { from { transform: scale(1.06) } to { transform: scale(1) } }
+.hero-zoom { animation: hero-zoom 7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@media (prefers-reduced-motion: reduce) { .hero-zoom { animation: none } }
+
+/* hero แนว lenis: ภาพในตัวอักษรค่อยๆ เลื่อน + เส้นบอกให้เลื่อนลง */
+@keyframes hero-pan { from { background-position: 0% 40% } to { background-position: 100% 60% } }
+.hero-wordmark { animation: hero-pan 18s ease-in-out infinite alternate; }
+@keyframes hero-image-pan { from { transform: translateX(0) } to { transform: translateX(-120px) } }
+.hero-wordmark-image { animation: hero-image-pan 18s ease-in-out infinite alternate; }
+@keyframes hero-scroll-line { from { transform: translateY(-100%) } to { transform: translateY(200%) } }
+.hero-scroll-line { animation: hero-scroll-line 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-wordmark, .hero-wordmark-image, .hero-scroll-line { animation: none } }

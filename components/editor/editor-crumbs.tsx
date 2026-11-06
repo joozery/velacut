@@ -7,7 +7,7 @@ import { copy } from "@/lib/copy";
 import { GameSelect } from "./game-select";
 import { useEditorStep } from "./use-editor-step";
 
-/** ปุ่มย้อนกลับ (ไป step ก่อนหน้า หรือหน้าแรก) + breadcrumb "สร้างกริด / ROV ▾" */
+/** ปุ่มย้อนกลับ (ไป step ก่อนหน้า หรือหน้าแรก) + breadcrumb "สร้างกริด / MLBB ▾" */
 export function EditorCrumbs() {
   const { game, step, prev, href } = useEditorStep();
   const backHref = game.mode === "library" && prev ? href(prev) : "/";

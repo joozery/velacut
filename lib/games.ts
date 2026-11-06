@@ -1,4 +1,5 @@
-export type GameSlug = "rov" | "mlbb" | "freefire";
+/** เว็บรองรับเฉพาะ Mobile Legends (ตัดสินใจ 2026-11-06) — เพิ่มเกมใหม่ได้ที่ GAMES */
+export type GameSlug = "mlbb";
 
 export type GameConfig = {
   slug: GameSlug;
@@ -15,14 +16,6 @@ export type GameConfig = {
 
 export const GAMES: GameConfig[] = [
   {
-    slug: "rov",
-    icon: "/games/rov.webp",
-    name: "Arena of Valor (ROV)",
-    shortName: "ROV",
-    mode: "library",
-    gradient: "from-amber-400 via-orange-500 to-rose-500",
-  },
-  {
     slug: "mlbb",
     icon: "/games/mlbb.webp",
     name: "Mobile Legends",
@@ -30,17 +23,11 @@ export const GAMES: GameConfig[] = [
     mode: "library",
     gradient: "from-sky-400 via-indigo-500 to-violet-600",
   },
-  {
-    slug: "freefire",
-    icon: "/games/freefire.webp",
-    name: "Free Fire",
-    shortName: "Free Fire",
-    mode: "upload",
-    gradient: "from-yellow-400 via-orange-500 to-red-600",
-  },
 ];
 
 export const GAME_SLUGS = GAMES.map((g) => g.slug);
+/** เกมหลักของเว็บ — ใช้เป็นปลายทางของลิงก์ "สร้างป้าย" / "คลังภาพ" */
+export const DEFAULT_GAME: GameSlug = "mlbb";
 
 export function getGame(slug: string): GameConfig | undefined {
   return GAMES.find((g) => g.slug === slug);

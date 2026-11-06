@@ -23,7 +23,7 @@ export function PageHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <header className={cn("mx-auto flex max-w-2xl flex-col items-center text-center", className)}>
+    <header className={cn("mx-auto flex max-w-4xl flex-col items-start border-l-[3px] border-primary pl-5 text-left", className)}>
       {badge && (
         <Badge variant="soft" size="lg" className="mb-4">
           {badge}

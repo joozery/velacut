@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { History, LogOut, Monitor, Moon, Palette, Sun, User, Wallet } from "lucide-react";
+import { ChevronDown, History, LogOut, Monitor, Moon, Palette, Sun, User, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import {
   Dropdown,
@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/dropdown";
 import { copy } from "@/lib/copy";
 import { toast } from "@/stores/toast-store";
+import { cn } from "@/lib/utils";
 
-export function UserMenu({ user }: { user: { name: string; email: string; initials: string } }) {
+export function UserMenu({ user, showLabel = false }: { user: { name: string; email: string; initials: string }; showLabel?: boolean }) {
   const { theme, setTheme } = useTheme();
   const c = copy.header;
 
@@ -28,9 +29,10 @@ export function UserMenu({ user }: { user: { name: string; email: string; initia
     <Dropdown>
       <DropdownTrigger
         aria-label={c.userMenuAria}
-        className="rounded-full ring-offset-2 transition-shadow hover:ring-2 hover:ring-border focus-visible:outline-2 focus-visible:outline-ring"
+        className={cn("rounded-full ring-offset-2 transition-shadow hover:ring-2 hover:ring-border focus-visible:outline-2 focus-visible:outline-ring", showLabel && "inline-flex h-9 items-center gap-1.5 border border-border bg-surface py-1 pr-2 pl-1")}
       >
-        <Avatar fallback={user.initials} alt={user.name} />
+        <Avatar fallback={user.initials} alt={user.name} className={showLabel ? "size-7" : undefined} />
+        {showLabel && <><span className="hidden text-xs font-medium 2xl:inline">บัญชี</span><ChevronDown className="size-3 text-muted-foreground" aria-hidden /></>}
       </DropdownTrigger>
       <DropdownContent className="w-60">
         <DropdownLabel className="flex flex-col gap-0.5 py-2.5">

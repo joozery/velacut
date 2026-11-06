@@ -11,11 +11,11 @@ export function AnnouncementBar() {
   const c = copy.announcement;
   return (
     <Dialog>
-      <div className="bg-secondary text-secondary-foreground">
-        <DialogTrigger className="container-page flex h-10 items-center justify-center gap-2 text-xs sm:text-sm">
-          <Megaphone className="size-4 shrink-0 text-primary" aria-hidden />
+      <div className="bg-ink text-white">
+        <DialogTrigger className="container-page flex h-9 items-center justify-center gap-2 text-[10px] sm:text-xs">
+          <Megaphone className="size-3.5 shrink-0 text-accent" aria-hidden />
           <span className="truncate">{c.short}</span>
-          <span className="inline-flex shrink-0 items-center font-semibold text-primary underline-offset-4 hover:underline">
+          <span className="inline-flex shrink-0 items-center font-semibold text-accent underline-offset-4 hover:underline">
             {c.more}
             <ChevronRight className="size-4" aria-hidden />
           </span>

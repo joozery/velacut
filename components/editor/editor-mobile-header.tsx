@@ -25,7 +25,6 @@ export function EditorMobileHeader() {
       <MobileMenu className="size-10 rounded-2xl border border-border/70 bg-surface md:inline-flex" items={[
         { href: "/", label: "หน้าแรก" },
         { href: `/generate/${game.slug}`, label: "สร้างป้าย", match: "/generate" },
-        { href: `/assets/${game.slug}`, label: "คลังภาพฟรี", match: "/assets" },
         { href: "/topup", label: "เติมคอยน์" },
         { href: "/history", label: "ประวัติ" },
         { href: "/profile", label: "บัญชีของฉัน" },

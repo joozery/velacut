@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { Crown, Trophy } from "lucide-react";
+import { Crown } from "lucide-react";
+import { RankEmblem } from "@/components/shared/rank-emblem";
+import { SAMPLE_RANK } from "@/lib/ranks";
 import { SkinThumb } from "@/components/shared/skin-thumb";
 import { BRAND_NAME, copy } from "@/lib/copy";
 import { getCatalog } from "@/lib/catalog";
@@ -56,6 +58,8 @@ export function PosterPreview({
   // สกินน้อยกว่าจำนวนคอลัมน์ → ใช้เท่าจำนวนสกิน ให้แถวเต็มความกว้าง
   const cols = Math.max(1, Math.min(wantCols, skins.length));
   const cover = skins.find((skin) => skin.id === decoration?.coverId) ?? [...skins].sort((a, b) => b.tierRank - a.tierRank)[0];
+  // แรงค์: ยังไม่ตกแต่ง (preview ตัวอย่าง) → แสดงแรงค์ตัวอย่าง / ตกแต่งแล้ว → แสดงตามที่เลือก (ไม่เลือก = ไม่แสดง)
+  const rank = decoration ? decoration.rank : SAMPLE_RANK;
   const L = decoration ? { ...decoration, skins: skins.length } : SAMPLE_LISTING;
   const name = copy.editor.template.options[template].name;
 
@@ -89,6 +93,9 @@ export function PosterPreview({
             </Band>
           </div>
 
+          {/* แรงค์ของไอดี (ตราแรงค์ในเกม) — เทมเพลต A และ B */}
+          {rank && <RankEmblem rank={rank} className={cn("absolute right-[4%]", template === "b" ? "top-[17%]" : "top-[8%]")} />}
+
           {/* ราคา: กลางล่าง มีแถบรองยาว */}
           <div className="absolute inset-x-0 bottom-[6%] flex flex-col items-center">
             {template === "b" && (
@@ -104,7 +111,7 @@ export function PosterPreview({
             </span>
           </div>
 
-          {/* เทมเพลต B: แรงค์ + ของตกแต่ง */}
+          {/* เทมเพลต B: ของตกแต่ง */}
           {template === "b" && (
             <>
               <div className="absolute bottom-[7%] left-[4%] flex flex-col items-center">
@@ -115,12 +122,7 @@ export function PosterPreview({
                   {formatInt(L.honor)}
                 </span>
               </div>
-              <div className="absolute right-[4%] bottom-[7%] flex flex-col items-center">
-                <span className="grid size-[clamp(30px,13cqw,80px)] place-items-center rounded-full bg-gradient-to-br from-amber-200 via-amber-500 to-orange-700 shadow-xl ring-2 ring-amber-100/70">
-                  <Trophy className="size-1/2 text-white drop-shadow" />
-                </span>
-                <span className="mt-[0.3em] text-[clamp(8px,2.8cqw,15px)] font-extrabold drop-shadow-[0_2px_3px_rgb(0_0_0/0.9)]">{s.rank}</span>
-              </div>
+
               <span className="absolute top-[7%] right-[4%] inline-flex items-center gap-1 rounded-full bg-black/60 px-[0.7em] py-[0.3em] text-[clamp(8px,2.6cqw,14px)] font-semibold">
                 <Crown className="size-[1.1em] text-amber-300" />
                 VIP

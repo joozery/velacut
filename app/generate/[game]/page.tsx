@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { GridStep } from "@/components/editor/grid-step";
 import { TemplateStep } from "@/components/editor/template-step";
 import { DecorateStep } from "@/components/editor/decorate-step";
+import { CheckoutStep } from "@/components/editor/checkout-step";
 import { copy } from "@/lib/copy";
 import { getGame, parseStep } from "@/lib/games";
 import { fmt } from "@/lib/utils";
@@ -33,7 +34,11 @@ export default async function EditorPage({
     return <DecorateStep game={game.slug} />;
   }
 
-  // checkout และ editor Free Fire
+  if (game.mode === "library" && step === "checkout") {
+    return <CheckoutStep game={game.slug} />;
+  }
+
+  // เกมแบบอัปโหลดรูปเอง (ยังไม่มีเกมที่ใช้)
   const stepLabel = game.mode === "upload" ? game.shortName : copy.editor.steps[step];
   return (
     <div className="px-3 py-4 sm:px-6 sm:py-6">

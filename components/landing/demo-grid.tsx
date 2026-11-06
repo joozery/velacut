@@ -66,7 +66,7 @@ export function DemoGrid({ skins }: { skins: Skin[] }) {
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <GripVertical className="size-3.5" aria-hidden />
-          {fmt(f.drag.toolbar, { game: "ROV" })}
+          {fmt(f.drag.toolbar, { game: "MLBB" })}
         </span>
         <Badge variant="outline" size="sm">{f.demoTag}</Badge>
       </div>

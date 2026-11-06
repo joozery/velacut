@@ -11,6 +11,7 @@ import { getCatalog } from "@/lib/catalog";
 import type { GameSlug } from "@/lib/games";
 import { DEFAULT_DECORATION, useEditorStore, useGameEditor, type Decoration } from "@/stores/editor-store";
 import { PosterPreview } from "./poster-preview";
+import { RankPicker } from "./rank-picker";
 import { useGrid } from "./use-grid";
 import { useRequireSkins } from "./use-step-guard";
 
@@ -58,7 +59,8 @@ export function DecorateStep({ game }: { game: GameSlug }) {
                 <Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-${key}`} type="number" min={0} max={key === "winrate" ? 100 : undefined} step={key === "winrate" ? 0.1 : 1} value={decoration[key]} onChange={(e) => patch({ [key]: Math.min(key === "winrate" ? 100 : Number.MAX_SAFE_INTEGER, Math.max(0, Number(e.target.value) || 0)) })} />
               </div>)}
             </div>
-            <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div></>}
+            <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div>
+            <RankPicker id={`${prefix}-decorate-rank`} value={decoration.rank} onChange={(rank) => patch({ rank })} /></>}
             {(!tool || tool === "cover") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><select id={`${prefix}-decorate-cover`} value={decoration.coverId} onChange={(e) => patch({ coverId: e.target.value })} className="h-12 w-full rounded-2xl border border-input bg-surface px-3 text-base sm:text-sm"><option value="">เลือกจากสกินระดับสูงสุดอัตโนมัติ</option>{skins.map((id) => <option key={id} value={id}>{getCatalog(game).skinById.get(id)?.name ?? id}</option>)}</select>
               {tool === "cover" && <div className="mt-2 grid grid-cols-3 gap-3">{skins.map((id) => { const skin = getCatalog(game).skinById.get(id); return skin ? <button key={id} type="button" aria-label={`ใช้ ${skin.name} เป็นหน้าปก`} aria-pressed={decoration.coverId === id} onClick={() => patch({ coverId: id })} className={`relative overflow-hidden rounded-2xl border-2 ${decoration.coverId === id ? "border-primary ring-2 ring-primary/20" : "border-transparent"}`}><Image src={skin.image} alt={skin.name} width={120} height={160} className="aspect-[3/4] w-full object-cover" /><span className="absolute inset-x-0 bottom-0 bg-black/65 p-1 text-[10px] text-white">{skin.name}</span></button> : null; })}</div>}
             </div>}
@@ -84,15 +86,15 @@ export function DecorateStep({ game }: { game: GameSlug }) {
           <Button variant="outline" size="sm" aria-label="ดูตัวอย่างป้าย" onClick={() => setPreview(true)} className="inline-flex rounded-full px-3"><Eye /><span className="hidden sm:inline">ดูตัวอย่าง</span></Button>
 
         </div>
-        <div className="relative min-h-0 flex-1 overflow-auto overscroll-contain bg-[#eceef4] px-6 pt-8 pb-5 dark:bg-zinc-900 sm:p-8 lg:bg-background">
+        <div className="relative min-h-0 flex-1 overflow-auto overscroll-contain bg-[#eceef4] px-6 pt-8 pb-5 dark:bg-background sm:p-8 lg:bg-background">
           <div className="mx-auto transition-[width] duration-150 motion-reduce:transition-none" style={{ width: `${zoom}%`, maxWidth: `${34 * zoom / 100}rem` }}>{poster}</div>
           <p className="mt-5 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground"><Check className="size-3" />บันทึกแล้ว · {skins.length} สกิน</p>
         </div>
-        <div className="shrink-0 rounded-t-[28px] border-t border-border/50 bg-surface px-3 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_32px_rgb(25_35_65/0.06)] lg:hidden">
+        <div className="shrink-0 rounded-t-2xl border-t border-border/50 bg-surface px-3 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_32px_rgb(25_35_65/0.06)] lg:hidden">
           <p className="mb-2 text-center text-[10px] font-medium text-muted-foreground">แต่งป้ายในสไตล์คุณ</p>
           <div className="grid grid-cols-4 gap-1">
             {tools.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-haspopup="dialog" onClick={() => { setActiveTool(id); setSettingsOpen(true); }} className="group flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl text-[11px] font-medium text-foreground transition-colors active:bg-primary-soft">
-              <span className={`grid size-11 place-items-center rounded-2xl ${id === "text" ? "bg-primary text-primary-foreground shadow-[0_4px_12px_rgb(20_99_232/0.2)]" : "bg-surface-2 text-foreground"}`}><Icon className="size-5" strokeWidth={1.7} /></span>{label}
+              <span className={`grid size-11 place-items-center rounded-2xl ${id === "text" ? "bg-primary text-primary-foreground shadow-soft" : "bg-surface-2 text-foreground"}`}><Icon className="size-5" strokeWidth={1.7} /></span>{label}
             </button>)}
           </div>
         </div>

@@ -68,7 +68,8 @@ function SidebarInner({ game }: { game: ReturnType<typeof useEditorStep>["game"]
   return (
     <PopoverPrimitive.Root open={!!current} onOpenChange={(o) => !o && setGroup(null)}>
       <PopoverPrimitive.Anchor asChild>
-        <aside aria-label={c.sidebarAria} className="hidden w-[19rem] shrink-0 flex-col border-r border-border bg-surface lg:flex">
+        <aside aria-label={c.sidebarAria} className="hidden w-[18rem] shrink-0 flex-col border-r border-border bg-surface lg:flex">
+          <div className="flex items-center justify-between border-b border-border px-5 py-5"><div><p className="font-mono text-[9px] tracking-[0.18em] text-primary">VELCUT / LIBRARY</p><h2 className="mt-1 text-lg font-bold">คอลเลกชันสกิน</h2></div><Layers className="size-5 text-primary" aria-hidden /></div>
           <Tabs
             value={tab}
             onValueChange={(v) => {
@@ -108,7 +109,7 @@ function SidebarInner({ game }: { game: ReturnType<typeof useEditorStep>["game"]
                 }}
                 placeholder={tab === "heroes" ? c.searchHeroes : c.search}
                 aria-label={c.searchAria}
-                className="h-10 w-full rounded-full border border-input bg-surface-2/60 pr-3 pl-10 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
+                className="h-10 w-full rounded-lg border border-input bg-surface-2/60 pr-3 pl-10 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring"
               />
             </div>
           </div>

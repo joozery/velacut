@@ -1,9 +1,11 @@
 import Image from "next/image";
-import { Trophy } from "lucide-react";
 import { SkinThumb } from "./skin-thumb";
 import { copy } from "@/lib/copy";
 import { formatInt } from "@/lib/format";
-import { featuredSkins } from "@/lib/catalog";
+import { featuredSkins, getCatalog } from "@/lib/catalog";
+import { strongestMeta } from "@/lib/rankings";
+import { SAMPLE_RANK } from "@/lib/ranks";
+import { RankEmblem } from "./rank-emblem";
 import { SAMPLE_LISTING } from "@/lib/mock";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +23,7 @@ export function PosterMock({ className, compact, label }: { className?: string; 
   const L = SAMPLE_LISTING;
 
   if (compact) {
-    const skins = featuredSkins("rov", 8, 4);
+    const skins = featuredSkins("mlbb", 8, 4);
     return (
       <div role="img" aria-label={label} className={cn("relative overflow-hidden rounded-2xl bg-zinc-950 text-white", className)}>
         <div aria-hidden className="absolute -top-8 -right-8 size-40 rounded-full bg-gradient-to-br from-primary to-fuchsia-500 opacity-60 blur-2xl" />
@@ -45,8 +47,14 @@ export function PosterMock({ className, compact, label }: { className?: string; 
     );
   }
 
-  const skins = featuredSkins("rov", 24, 2);
-  const cover = featuredSkins("rov", 1, 7)[0] ?? skins[0];
+  const skins = featuredSkins("mlbb", 24, 2);
+  // หน้าปก = ฮีโร่ที่เมต้าแรงสุด (ในกลุ่มที่มีสกินระดับสูง) + สกินที่ดีที่สุดของฮีโร่นั้น
+  const cat = getCatalog("mlbb");
+  const candidates = cat.heroes.filter((h) => h.skinIds.some((id) => (cat.skinById.get(id)?.tierRank ?? 0) >= 4));
+  const meta = strongestMeta(candidates.map((h) => h.id));
+  const metaHero = meta ? cat.heroById.get(meta.heroId) : undefined;
+  const cover =
+    (metaHero && [...metaHero.skinIds].map((id) => cat.skinById.get(id)!).sort((a, b) => b.tierRank - a.tierRank)[0]) ?? skins[0];
 
   return (
     <div
@@ -65,7 +73,7 @@ export function PosterMock({ className, compact, label }: { className?: string; 
         <div className="flex h-full flex-col justify-between p-[5%]">
           <div>
             <p className="text-[clamp(10px,3.2cqw,14px)] font-bold">
-              ROV <span className={hi}>{L.no}</span>
+              MLBB <span className={hi}>{L.no}</span>
             </p>
             <p className="text-[clamp(18px,6cqw,28px)] leading-tight font-bold">
               {s.heroes} <span className={hi}>{L.heroes}</span> {s.skins} <span className={hi}>{L.skins}</span>
@@ -79,13 +87,8 @@ export function PosterMock({ className, compact, label }: { className?: string; 
           </p>
         </div>
 
-        {/* แรงค์ */}
-        <div className="absolute top-[52%] right-[5%] flex -translate-y-1/2 flex-col items-center gap-1">
-          <span className="grid size-[clamp(40px,14cqw,60px)] place-items-center rounded-full bg-gradient-to-br from-amber-300 via-amber-500 to-orange-600 shadow-lg ring-2 ring-amber-200/60">
-            <Trophy className="size-1/2 text-white drop-shadow" />
-          </span>
-          <span className="rounded-md bg-black/60 px-1.5 py-0.5 text-[clamp(8px,2.6cqw,11px)] font-bold">{s.rank}</span>
-        </div>
+        {/* แรงค์ของไอดี (ตราแรงค์ในเกม) */}
+        <RankEmblem rank={SAMPLE_RANK} className="absolute top-[50%] right-[4%] -translate-y-1/2" />
       </div>
 
       {/* กริดสกิน 8 × 3 */}

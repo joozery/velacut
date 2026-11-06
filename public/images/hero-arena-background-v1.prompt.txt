@@ -1,0 +1,6 @@
+Use case: stylized-concept
+Asset type: full-width website hero background, wide landscape 2:1.
+Primary request: A premium cinematic dark fantasy esports environment for a game-account poster creation website. Abstract monumental obsidian arena with elegant translucent cobalt crystal shards at the far edges, thin electric blue light trails sweeping along the lower third, atmospheric navy fog and sparse tiny floating particles. A distant luminous blue portal subtly offset left at the horizon. Beautiful realistic 3D environment rendering, sophisticated restrained composition.
+Composition: wide panoramic 2:1 landscape. Upper half and center are very dark and visually quiet, because huge image-filled wordmark overlays the upper half. Lower right also quiet for white Thai headline and action buttons. Visual detail concentrated at far left and far right edges and low horizon. Background must feel like an immersive game world rather than a generic gradient.
+Palette: near-black #04060d, midnight navy, royal blue #2f78f5, occasional icy blue highlights. Low key lighting, clear depth, soft volumetric rays, refined and uncluttered.
+Constraints: background artwork only, no text, no letters, no logos, no watermark, no UI, no buttons, no people, no characters, no bright white areas, no purple or pink.
