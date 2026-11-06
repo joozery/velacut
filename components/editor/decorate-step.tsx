@@ -86,7 +86,7 @@ export function DecorateStep({ game }: { game: GameSlug }) {
           <Button variant="outline" size="sm" aria-label="ดูตัวอย่างป้าย" onClick={() => setPreview(true)} className="inline-flex rounded-full px-3"><Eye /><span className="hidden sm:inline">ดูตัวอย่าง</span></Button>
 
         </div>
-        <div className="relative min-h-0 flex-1 overflow-auto overscroll-contain bg-[#eceef4] px-6 pt-8 pb-5 dark:bg-background sm:p-8 lg:bg-background">
+        <div className="relative min-h-0 flex-1 overflow-auto overscroll-contain editor-canvas px-6 pt-8 pb-5 sm:p-8">
           <div className="mx-auto transition-[width] duration-150 motion-reduce:transition-none" style={{ width: `${zoom}%`, maxWidth: `${34 * zoom / 100}rem` }}>{poster}</div>
           <p className="mt-5 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground"><Check className="size-3" />บันทึกแล้ว · {skins.length} สกิน</p>
         </div>

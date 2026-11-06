@@ -43,7 +43,7 @@ export function SkinThumb({
   return (
     <div className={cn("@container relative aspect-[3/4] overflow-hidden rounded-xl bg-surface-2 text-white", className)}>
       {failed ? (
-        <div className={cn("absolute inset-0 grid place-items-center bg-gradient-to-br", placeholderGradient(skin.id))}>
+        <div data-image-error className={cn("absolute inset-0 grid place-items-center bg-gradient-to-br", placeholderGradient(skin.id))}>
           <ImageIcon aria-hidden className="size-1/3 opacity-30" />
         </div>
       ) : (

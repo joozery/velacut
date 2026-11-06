@@ -68,8 +68,8 @@ function SidebarInner({ game }: { game: ReturnType<typeof useEditorStep>["game"]
   return (
     <PopoverPrimitive.Root open={!!current} onOpenChange={(o) => !o && setGroup(null)}>
       <PopoverPrimitive.Anchor asChild>
-        <aside aria-label={c.sidebarAria} className="hidden w-[18rem] shrink-0 flex-col border-r border-border bg-surface lg:flex">
-          <div className="flex items-center justify-between border-b border-border px-5 py-5"><div><p className="font-mono text-[9px] tracking-[0.18em] text-primary">VELCUT / LIBRARY</p><h2 className="mt-1 text-lg font-bold">คอลเลกชันสกิน</h2></div><Layers className="size-5 text-primary" aria-hidden /></div>
+        <aside aria-label={c.sidebarAria} className="hidden w-[17rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-soft-sm lg:flex">
+          <div className="flex items-center gap-3 border-b border-border px-4 py-4"><span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"><Layers className="size-5" aria-hidden /></span><div><h2 className="text-sm font-bold">คลังสกินของคุณ</h2><p className="mt-0.5 text-[11px] text-muted-foreground">เลือกฮีโร่ แล้วเพิ่มสกินลงป้าย</p></div></div>
           <Tabs
             value={tab}
             onValueChange={(v) => {

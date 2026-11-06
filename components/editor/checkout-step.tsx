@@ -7,7 +7,7 @@ import { RadioCard, RadioCardGroup } from "@/components/ui/radio-card";
 import { BRAND_NAME, copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
 import type { GameSlug } from "@/lib/games";
-import { MOCK_USER } from "@/lib/mock";
+import { posterSignature, useCheckoutStore, useDemoWallet } from "@/stores/checkout-store";
 import { PRICE_PER_SKIN, TEMPLATE_PRICES, payableTotal } from "@/lib/pricing";
 import { cn, fmt } from "@/lib/utils";
 import { DEFAULT_DECORATION, useEditorStore, useGameEditor, type OutputMode } from "@/stores/editor-store";
@@ -20,15 +20,15 @@ const c = copy.editor.checkout;
 /** ข้อมูลการชำระที่ใช้ร่วมกันระหว่างหน้า checkout และแถบล่าง */
 export function useCheckout(game: GameSlug) {
   const { doc } = useGameEditor(game);
-  const { skins } = useGrid(game);
+  const { skins, viewCols } = useGrid(game);
   const output: OutputMode = doc.output ?? "clean";
   const skinCost = Math.round(skins.length * PRICE_PER_SKIN * 100) / 100;
   const templateFee = TEMPLATE_PRICES[doc.template].price;
-  const total = payableTotal(skins.length, doc.template, output);
-  // Phase 4: อ่านยอดจาก Wallet จริง
-  const balance = MOCK_USER.wallet.balance;
+  const paid = useCheckoutStore((s) => s.orders.some((o) => o.signature === posterSignature(game, doc, viewCols)));
+  const total = paid ? 0 : payableTotal(skins.length, doc.template, output);
+  const balance = useDemoWallet();
   const after = Math.round((balance - total) * 100) / 100;
-  return { output, skinCost, templateFee, total, balance, after, short: after < 0 ? -after : 0 };
+  return { output, skinCost, templateFee, total, balance, after, paid, short: after < 0 ? -after : 0 };
 }
 
 function Row({ label, sub, value, className }: { label: string; sub?: string; value: string; className?: string }) {
@@ -60,13 +60,15 @@ export function CheckoutStep({ game }: { game: GameSlug }) {
 
   return (
     <div className="lg:grid lg:h-full lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
-      <section className="flex flex-col items-center gap-3 p-4 sm:p-8 lg:overflow-y-auto lg:p-10">
+      <section className="editor-canvas flex min-w-0 flex-col items-center gap-4 p-5 sm:p-8 lg:overflow-y-auto lg:p-10">
+        <div className="w-full max-w-[34rem]"><p className="text-[10px] font-semibold tracking-widest text-primary">04 / EXPORT</p><h1 className="mt-1 text-lg font-bold sm:text-xl">ป้ายของคุณพร้อมแล้ว</h1></div>
         <PosterPreview game={game} skinIds={skins} cols={viewCols} template={doc.template} decoration={decoration} className="max-w-[34rem]" />
         <p className="text-center text-xs text-muted-foreground">{copy.editor.template.previewNote}</p>
       </section>
 
-      <aside className="border-t border-border bg-surface p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l">
-        {doc.template !== "none" && !doc.decoration?.price && (
+      <aside className="border-t border-border bg-surface p-5 sm:p-6 lg:overflow-y-auto lg:border-t-0 lg:border-l">
+        <p className="mb-4 rounded-xl bg-primary-soft p-3 text-xs leading-5 text-primary">โหมดทดลอง · ใช้คอยน์ทดลองในเบราว์เซอร์ ไม่มีการเรียกเก็บเงินจริง ดาวน์โหลด PNG ได้จริง</p>
+        {doc.template === "b" && !doc.decoration?.price && (
           <div role="status" className="mb-5 flex items-center gap-3 rounded-2xl bg-primary-soft p-3 text-primary-soft-foreground">
             <AlertCircle className="size-5 shrink-0" aria-hidden />
             <p className="flex-1 text-sm font-medium">{c.noInfo}</p>

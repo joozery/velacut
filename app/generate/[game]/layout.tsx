@@ -32,9 +32,9 @@ export default async function EditorLayout({ children, params }: { children: Rea
       <Suspense>
         <EditorHydrator />
         <EditorMobileSteps />
-        <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 lg:gap-3 lg:p-3 lg:pt-0">
           <EditorSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:shadow-soft-sm">
             <EditorToolbar />
             <main id="main" className="relative min-h-0 flex-1 overflow-y-auto">
               {children}

@@ -45,13 +45,14 @@ export function TemplateStep({ game }: { game: GameSlug }) {
   return (
     <div className="lg:grid lg:h-full lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
       {/* preview */}
-      <section className="flex flex-col items-center gap-3 p-4 sm:p-8 lg:overflow-y-auto lg:p-10">
+      <section className="editor-canvas flex min-w-0 flex-col items-center gap-4 p-5 sm:p-8 lg:overflow-y-auto lg:p-10">
+        <div className="w-full max-w-[34rem]"><p className="text-[10px] font-semibold tracking-widest text-primary">02 / TEMPLATE</p><h1 className="mt-1 text-lg font-bold sm:text-xl">เลือกแบบที่ใช่สำหรับป้ายคุณ</h1></div>
         <PosterPreview game={game} skinIds={skins} cols={viewCols} template={doc.template} decoration={doc.decoration} className="max-w-[34rem]" />
         <p className="text-center text-xs text-muted-foreground">{t.previewNote}</p>
       </section>
 
       {/* แผงตัวเลือก */}
-      <aside className="border-t border-border bg-surface p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l">
+      <aside className="border-t border-border bg-surface p-5 sm:p-6 lg:overflow-y-auto lg:border-t-0 lg:border-l">
         <Row
           label={t.skinsRow}
           sub={fmt(t.skinsFormula, { n: skins.length, price: PRICE_PER_SKIN })}

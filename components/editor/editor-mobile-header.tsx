@@ -32,6 +32,5 @@ export function EditorMobileHeader() {
       ]} />
       {game.mode === "library" && next && (ready ? <Button asChild size="sm" className="h-10 gap-1 rounded-2xl px-3"><Link href={href(next)}>{step === "decorate" ? "ถัดไป" : "ต่อไป"}<ArrowRight className="size-3.5" /></Link></Button> : <Button size="sm" disabled className="h-10 gap-1 rounded-2xl px-3">ต่อไป<ArrowRight /></Button>)}
     </div>
-    <div className="flex gap-1 px-5 pb-2" aria-hidden="true">{Array.from({length:4},(_,i)=><span key={i} className={`h-[3px] flex-1 rounded-full ${i<=index ? "bg-primary" : "bg-surface-3"}`} />)}</div>
   </header>;
 }

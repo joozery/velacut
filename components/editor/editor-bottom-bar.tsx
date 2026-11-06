@@ -39,7 +39,7 @@ export function EditorBottomBar() {
   const onGrid = isLibrary && step === "grid";
 
   return (
-    <div className={cn("relative z-20 shrink-0 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]", isLibrary && step === "decorate" && "hidden lg:block")}>
+    <div className={cn("relative z-20 shrink-0 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_rgb(25_55_100/0.03)]", isLibrary && step === "decorate" && "hidden lg:block")}>
       <div className="flex h-[4.5rem] items-center gap-2 px-4 sm:gap-3 sm:px-5">
         {/* ราคา */}
         <div className="min-w-0 shrink-0" aria-live="polite">
@@ -91,7 +91,7 @@ export function EditorBottomBar() {
           {onGrid && (
             <Button
               variant="outline"
-              className="rounded-full px-3 sm:px-4"
+              className="rounded-xl px-3 sm:px-4"
               onClick={() => setPreviewOpen(true)}
               disabled={!hydrated || skins.length === 0}
               aria-label={copy.editor.toolbar.preview}
@@ -113,7 +113,7 @@ export function EditorBottomBar() {
               <ArrowRight aria-hidden />
             </Button>
           ) : (
-            <Button asChild className="rounded-full px-5">
+            <Button asChild className="rounded-xl px-5 shadow-soft">
               <Link href={href(next)}>
                 {c.next}
                 <ArrowRight aria-hidden />

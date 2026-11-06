@@ -25,7 +25,7 @@ function Band({ className, children }: { className?: string; children: React.Rea
 /** ลายน้ำตัวอักษรเอียงทั้งภาพ (preview ฝั่ง client มีลายน้ำเสมอ — ภาพจริง render ฝั่ง server หลังชำระ) */
 function TextWatermark() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden select-none">
+    <div data-export-watermark aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden select-none">
       <div className="absolute -inset-1/2 grid rotate-[-24deg] grid-cols-4 content-center gap-x-10 gap-y-14 opacity-[0.16]">
         {Array.from({ length: 48 }).map((_, i) => (
           <span key={i} className="text-[clamp(10px,3.2cqw,18px)] font-bold tracking-[0.3em] whitespace-nowrap text-white">
@@ -68,13 +68,22 @@ export function PosterPreview({
       role="img"
       aria-label={fmt(copy.editor.template.previewAlt, { name })}
       className={cn(
-        "@container relative isolate w-full overflow-hidden rounded-2xl bg-zinc-950 text-white shadow-soft-lg",
+        "@container relative isolate w-full shrink-0 overflow-hidden rounded-2xl bg-zinc-950 text-white shadow-soft-lg",
         template === "b" && "ring-2 ring-amber-400/70 ring-offset-2 ring-offset-zinc-950",
         className,
       )}
       style={decoration ? { "--color-amber-300": decoration.accent } as React.CSSProperties : undefined}
     >
-      {template !== "none" && (
+      {template === "a" ? (
+        <Image
+          src="/logo/bannerexam.png"
+          alt="ตัวอย่างแบนเนอร์ป้ายขายไอดี MLBB เทมเพลต A"
+          width={1641}
+          height={959}
+          sizes="(min-width: 1024px) 544px, 100vw"
+          className="block h-auto w-full"
+        />
+      ) : template !== "none" && (
         <div aria-hidden className="relative aspect-[16/10] overflow-hidden">
           {/* ภาพตัวละคร: ไม่ทับมืดทั้งภาพ — ใช้แถบดำรองหลังตัวหนังสือแทน (แบบป้ายขายไอดีทั่วไป) */}
           {cover && <Image src={cover.image} alt="" fill unoptimized sizes="640px" className="-z-20 object-cover object-[65%_25%]" />}
@@ -134,8 +143,8 @@ export function PosterPreview({
 
       {/* ตารางสกินของผู้ใช้ */}
       <div aria-hidden className="grid gap-px bg-black p-px" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-        {skins.map((skin, i) => (
-          <SkinThumb key={skin.id} skin={skin} index={i + 1} hideTier size="lg" sizes="160px" className="rounded-none" />
+        {skins.map((skin) => (
+          <SkinThumb key={skin.id} skin={skin} hideTier size="lg" sizes="160px" className="rounded-none" />
         ))}
       </div>
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { useCheckoutStore, useDemoWallet } from "@/stores/checkout-store";
+import { OrderDownload } from "@/components/editor/order-download";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Copy, FileImage, Gift, Info, Search, SearchX, Send, Wallet, XCircle } from "lucide-react";
@@ -38,7 +40,10 @@ function Amount({ record }: { record: HistoryRecord }) {
   return <span className={cn("font-semibold whitespace-nowrap tabular-nums", record.status !== "completed" ? "text-muted-foreground" : record.coins > 0 ? "text-primary" : "text-foreground")}>{record.coins > 0 ? "+" : "−"}{formatCoins(Math.abs(record.coins))}<span className="ml-1 text-[9px] font-normal text-muted-foreground">คอยน์</span></span>;
 }
 
-export function HistoryDashboard({ records, balance }: { records: HistoryRecord[]; balance: number }) {
+export function HistoryDashboard({ records: samples }: { records: HistoryRecord[]; balance: number }) {
+  const balance = useDemoWallet();
+  const orders = useCheckoutStore((s) => s.orders);
+  const records: HistoryRecord[] = [...orders.map((o): HistoryRecord => ({ id: o.id, kind: "poster", status: "completed", title: "ดาวน์โหลดป้าย MLBB", description: `${o.doc.skins.length} สกิน · ${o.doc.output === "watermark" ? "มีลายน้ำ" : "ไม่มีลายน้ำ"}`, date: o.date, coins: -o.amount, note: "รายการคอยน์ทดลองในเบราว์เซอร์ ไม่มีการเรียกเก็บเงินจริง" })), ...samples];
   const [kind, setKind] = useState<"all" | HistoryKind>("all");
   const [status, setStatus] = useState<"all" | HistoryStatus>("all");
   const [query, setQuery] = useState("");
@@ -60,7 +65,7 @@ export function HistoryDashboard({ records, balance }: { records: HistoryRecord[
 
   return <>
     <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-4">{stats.map((stat) => <div key={stat.label} className={cn("min-w-0 rounded-2xl border p-3 sm:p-5", stat.primary ? "border-primary/15 bg-primary-soft/50" : "border-border bg-surface")}><div className="mb-3 flex items-center justify-between gap-1"><span className="text-[10px] leading-5 text-muted-foreground sm:text-xs">{stat.label}</span><stat.icon className={cn("hidden size-4 shrink-0 sm:block", stat.primary ? "text-primary" : "text-muted-foreground")} aria-hidden /></div><p className={cn("text-xl leading-none font-bold tracking-tight tabular-nums sm:text-[28px]", stat.primary && "text-primary")}>{stat.value}</p><p className="mt-2 text-[8px] leading-4 text-muted-foreground sm:text-[10px]">{stat.note}</p></div>)}</div>
-    <p className="mb-5 flex items-start gap-2 text-[10px] leading-5 text-muted-foreground"><Info className="mt-1 size-3 shrink-0 text-primary" aria-hidden /><span><strong className="font-medium text-primary">ข้อมูลตัวอย่าง</strong> · รายการด้านล่างใช้แสดงหน้าจอ ยังไม่ใช่ประวัติธุรกรรมจริง</span></p>
+    <p className="mb-5 flex items-start gap-2 text-[10px] leading-5 text-muted-foreground"><Info className="mt-1 size-3 shrink-0 text-primary" aria-hidden /><span><strong className="font-medium text-primary">ข้อมูลตัวอย่าง</strong> · รวมรายการดาวน์โหลดในเบราว์เซอร์นี้กับข้อมูลตัวอย่าง ไม่มีการเรียกเก็บเงินจริง</span></p>
 
     <Tabs value={kind} onValueChange={(value) => { setKind(value as typeof kind); setPage(1); }} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="border-b border-border px-4 sm:px-5"><TabsList aria-label="ประเภทรายการ" className="h-auto w-full justify-start gap-4 rounded-none bg-transparent p-0 sm:gap-6">{(["all", ...Object.keys(kinds)] as ("all" | HistoryKind)[]).map((value) => <TabsTrigger key={value} value={value} className="relative h-14 gap-1.5 rounded-none border-b-2 border-transparent px-0 text-[11px] data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none sm:text-xs">{value === "all" ? "ทั้งหมด" : kinds[value].label}<span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[9px] text-muted-foreground">{value === "all" ? records.length : records.filter((record) => record.kind === value).length}</span></TabsTrigger>)}</TabsList></div>
@@ -75,6 +80,7 @@ export function HistoryDashboard({ records, balance }: { records: HistoryRecord[
     </Tabs>
 
     <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}><DialogContent className="max-w-md">{selected && <>
+      {orders.find((o) => o.id === selected.id) && <OrderDownload order={orders.find((o) => o.id === selected.id)!} />}
       <DialogTitle>รายละเอียดรายการ</DialogTitle><DialogDescription>ข้อมูลตัวอย่าง · {kinds[selected.kind].label}</DialogDescription>
       <div className="flex items-center justify-between rounded-xl bg-surface-2/60 p-4"><div><p className="text-xs font-semibold">{selected.title}</p><p className="mt-2 text-2xl"><Amount record={selected} /></p></div><Status status={selected.status} /></div>
       <dl className="grid gap-3 text-xs"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">เลขอ้างอิง</dt><dd className="font-mono text-[11px] select-all">{selected.id}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">วันและเวลา</dt><dd>{formatDate(selected.date)} · {formatTime(selected.date)} น.</dd></div>{selected.baht !== undefined && <div className="flex justify-between gap-4"><dt className="text-muted-foreground">จำนวนเงิน</dt><dd>{formatCoins(selected.baht)} บาท</dd></div>}</dl>

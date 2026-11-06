@@ -46,9 +46,9 @@ export function PreviewDialog({
               className="mx-auto grid blur-[3px]"
               style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(wantCols, skins.length))}, minmax(0, 1fr))`, gap: 6 }}
             >
-              {skins.map((id, i) => {
+              {skins.map((id) => {
                 const s = skinById.get(id);
-                return s ? <SkinThumb key={id} skin={s} index={i + 1} compact hideTier sizes="96px" /> : null;
+                return s ? <SkinThumb key={id} skin={s} compact hideTier sizes="96px" /> : null;
               })}
             </div>
             <div aria-hidden className="watermark pointer-events-none absolute inset-0" />

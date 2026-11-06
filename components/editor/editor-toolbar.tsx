@@ -109,7 +109,7 @@ export function EditorToolbar() {
   if (game.mode === "library" && (step === "template" || step === "decorate" || step === "checkout")) return null;
 
   return (
-    <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:px-5">
+    <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-surface px-3 py-2 sm:px-5">
       <p className="flex shrink-0 items-center gap-2 text-sm font-medium">
         <span aria-hidden className="size-1.5 rounded-full bg-primary" />
         {game.mode === "library" && step === "grid" ? copy.editor.grid.boardLabel : copy.editor.steps[step]}
@@ -118,7 +118,7 @@ export function EditorToolbar() {
         )}
       </p>
       {showTools && (
-        <div role="toolbar" aria-label={t.label} className={cn("no-scrollbar ml-auto flex min-w-0 items-center gap-0.5 overflow-x-auto")}>
+        <div role="toolbar" aria-label={t.label} className={cn("no-scrollbar ml-auto flex min-w-0 max-w-full items-center gap-0.5 overflow-x-auto rounded-xl bg-surface-2/70 px-1")}>
           {step === "grid" && <GridTools game={game.slug} />}
 
         </div>

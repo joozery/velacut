@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useDemoWallet } from "@/stores/checkout-store";
 import { Plus } from "lucide-react";
 import { CoinIcon } from "@/components/shared/coin";
 import { copy } from "@/lib/copy";
@@ -7,6 +10,8 @@ import { cn } from "@/lib/utils";
 
 /** ยอดคอยน์ + ปุ่มเติม (server component) */
 export function CoinBalance({ balance, className, showTopup = true }: { balance: number; className?: string; showTopup?: boolean }) {
+  const currentBalance = useDemoWallet();
+  balance = currentBalance;
   return (
     <div className={cn("inline-flex h-10 items-center gap-1 rounded-full border border-border bg-surface pr-1 pl-2 shadow-soft-sm", className)}>
       <CoinIcon />
