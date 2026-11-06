@@ -43,7 +43,7 @@ export function HeroLenis({ totalSkins, previewSkins }: { totalSkins: number; pr
   const glowScale = useTransform(scrollYProgress, [0, 1], [1, 1.4]);
 
   return (
-    <section id="hero" ref={ref} aria-label={fmt(h.aria, { brand: copy.brand.name })} className="relative isolate flex min-h-[520px] flex-col overflow-hidden bg-[#04060d] text-white sm:min-h-[560px] lg:h-[min(720px,calc(100svh-6rem))] lg:min-h-[580px]">
+    <section id="hero" ref={ref} aria-label={fmt(h.aria, { brand: copy.brand.name })} className="relative isolate flex min-h-[520px] flex-col overflow-hidden bg-[#04060d] text-white sm:min-h-[560px] lg:min-h-[max(580px,min(720px,calc(100svh-6rem)))]">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <Image src="/images/hero-arena-background-v1.webp" alt="" fill priority sizes="100vw" className="object-cover object-[20%_center] sm:object-center" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,13,0.45)_0%,rgba(4,6,13,0.12)_45%,rgba(4,6,13,0.7)_100%)]" />
@@ -88,7 +88,7 @@ export function HeroLenis({ totalSkins, previewSkins }: { totalSkins: number; pr
             <p className={cn(display.className, "text-xl leading-[1.05] tracking-wide text-white/90 uppercase")}>{h.scroll}<br />{h.scrollLine2}</p>
           </div>
           <p className="text-sm leading-6 text-white/65 sm:max-w-sm">{h.byline}<br className="hidden sm:block" /> {h.bylineLine2}</p>
-          <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row lg:col-span-1">
+          <div id="hero-actions" className="flex flex-col gap-3 sm:col-span-2 sm:flex-row lg:col-span-1">
             <HeroCta href="/generate/mlbb" variant="primary" icon={<Sparkles className="size-5" aria-hidden />} label={h.ctaPrimary} />
             <HeroCta href="/assets/mlbb" variant="ghost" icon={<Images className="size-5" aria-hidden />} label={h.ctaSecondary} />
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, m } from "framer-motion";
 import { Gift, MessageCircle, X } from "lucide-react";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -83,6 +84,8 @@ function ChannelButton({ ch, index, onDone }: { ch: ContactChannel; index: numbe
 
 /** dock ทางลัดมุมขวาล่าง: รางวัลรายวัน + แชทซัพพอร์ต */
 export function FloatingActions() {
+  const pathname = usePathname();
+  const [heroActionsVisible, setHeroActionsVisible] = useState(false);
   const { claimed, claimedToday } = useDailyReward();
   const [rewardOpen, setRewardOpen] = useState(false);
   const [nudge, setNudge] = useState(false);
@@ -90,6 +93,28 @@ export function FloatingActions() {
   const contactId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const hidden = useHideOnScrollDown();
+
+  useEffect(() => {
+    let actions: HTMLElement | null = null;
+    const observer = new IntersectionObserver(([entry]) => setHeroActionsVisible(entry.isIntersecting));
+    const watchActions = () => {
+      const next = document.getElementById("hero-actions");
+      if (next === actions) return;
+      observer.disconnect();
+      actions = next;
+      setHeroActionsVisible(false);
+      if (actions) observer.observe(actions);
+    };
+    watchActions();
+    // SmoothScroll can replace the landing subtree after hydration.
+    const mutations = new MutationObserver(watchActions);
+    const main = document.getElementById("main");
+    if (main) mutations.observe(main, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
+  }, [pathname]);
 
   // ปิดเมนูช่องทางติดต่อเมื่อคลิกข้างนอก / กด Esc
   useEffect(() => {
@@ -134,12 +159,13 @@ export function FloatingActions() {
 
   return (
     <m.div
+      id="floating-actions"
       ref={rootRef}
       aria-label={copy.dock.aria}
       role="group"
       animate={{ x: hidden && !rewardOpen && !contactOpen ? 84 : 0, opacity: hidden && !rewardOpen && !contactOpen ? 0.6 : 1 }}
       transition={{ type: "spring", stiffness: 380, damping: 34 }}
-      className="fixed right-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 flex items-end gap-2 sm:right-5 md:bottom-6"
+      className={cn("fixed right-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 flex items-end gap-2 sm:right-5 md:bottom-6", heroActionsVisible && !rewardOpen && !contactOpen && "invisible pointer-events-none")}
     >
       {/* บับเบิลชวนรับรางวัล */}
       <AnimatePresence>

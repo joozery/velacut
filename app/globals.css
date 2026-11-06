@@ -145,6 +145,10 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
   }
   body {
     background: var(--background);
