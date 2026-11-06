@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { placeholderGradient } from "./placeholders";
 
 /**
- * การ์ดสกินพร้อมภาพจริง: เลขลำดับ + badge ระดับ + ชื่อ
+ * การ์ดสกินพร้อมภาพจริง: เลขลำดับ + ชื่อ (ซ่อนป้ายระดับเป็นค่าเริ่มต้น)
  * ภาพเป็น webp ขนาดเล็กที่ resize ไว้แล้ว จึงใช้ unoptimized (ไม่ผ่าน image optimizer)
  */
 export function SkinThumb({
@@ -17,7 +17,7 @@ export function SkinThumb({
   index,
   compact,
   showHero,
-  hideTier,
+  hideTier = true,
   size = "md",
   className,
   priority,

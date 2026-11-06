@@ -2,12 +2,10 @@ import Image from "next/image";
 import { Download } from "lucide-react";
 import type { AssetItem } from "@/lib/assets";
 import { copy } from "@/lib/copy";
-import { getTier } from "@/lib/tiers";
 import { cn, fmt } from "@/lib/utils";
 
-/** การ์ดไฟล์ในคลัง: ภาพ + ป้ายหมวด/ระดับ + ปุ่มดาวน์โหลด (ทั้งใบเป็นลิงก์ดาวน์โหลด) */
+/** การ์ดไฟล์ในคลัง: ภาพ + ป้ายหมวด + ปุ่มดาวน์โหลด (ทั้งใบเป็นลิงก์ดาวน์โหลด) */
 export function AssetCard({ item, portrait, priority }: { item: AssetItem; portrait: boolean; priority?: boolean }) {
-  const tier = getTier(item.game, item.tier);
   const label = `${item.heroName} ${item.name}`;
   return (
     <li>
@@ -37,9 +35,6 @@ export function AssetCard({ item, portrait, priority }: { item: AssetItem; portr
             <span className="rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
               {copy.library.category[item.category]}
             </span>
-            <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] leading-none font-bold", tier.className)} title={tier.label}>
-              {tier.short}
-            </span>
           </span>
           <span className="absolute top-2 right-2 grid size-8 place-items-center rounded-full bg-white/90 text-zinc-900 opacity-0 shadow-soft transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
             <Download className="size-4" aria-hidden />
@@ -47,7 +42,7 @@ export function AssetCard({ item, portrait, priority }: { item: AssetItem; portr
         </div>
         <p className="mt-2 truncate text-sm font-semibold">{item.name}</p>
         <p className="truncate text-xs text-muted-foreground">
-          {item.heroName} · {tier.label}
+          {item.heroName}
         </p>
       </a>
     </li>
