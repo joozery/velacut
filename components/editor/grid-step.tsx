@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowRight, Check, LayoutGrid, Plus } from "lucide-react";
+import { ArrowRight, Check, Grip, LayoutGrid, Plus } from "lucide-react";
 import { AnimatePresence, m } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,8 +51,20 @@ export function GridStep({ game }: { game: GameSlug }) {
           </div>
         </div>
       ) : (
-        // พื้นที่ทำงาน: การ์ดใหญ่บนพื้นสว่าง จำนวนคอลัมน์ตาม slider (layout ของภาพจริงเลือกที่แถบล่าง)
-        <SkinGrid game={game} skins={skins} viewCols={viewCols} />
+        <div className="overflow-hidden rounded-2xl border border-primary/10 bg-surface shadow-soft-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary/10 bg-gradient-to-r from-primary-soft/80 via-primary-soft/30 to-surface px-4 py-4 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-primary/10 bg-surface text-primary"><LayoutGrid className="size-5" aria-hidden /></span>
+              <div><h1 className="text-sm font-bold sm:text-base">คอลเลกชันบนป้ายของคุณ</h1><p className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground sm:text-xs"><Grip className="size-3" aria-hidden />ลากการ์ดเพื่อจัดลำดับที่ต้องการ</p></div>
+            </div>
+            <Button variant="outline" size="sm" className="rounded-xl bg-surface" onClick={openPicker} disabled={skins.length >= MAX_SKINS}><Plus aria-hidden />เพิ่มสกิน</Button>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5 text-[10px] sm:px-5 sm:text-xs">
+            <p className="text-muted-foreground">เลือกแล้ว <span className="font-bold text-foreground tabular-nums">{skins.length}</span> / {MAX_SKINS} สกิน</p>
+            <p className="flex items-center gap-1.5 font-medium text-primary">{skins.length >= MIN_SKINS ? <><Check className="size-3.5" aria-hidden />พร้อมเลือกแบบป้าย</> : `เลือกเพิ่มอีก ${MIN_SKINS - skins.length} สกินเพื่อไปต่อ`}</p>
+          </div>
+          <div className="editor-canvas p-3 sm:p-5"><SkinGrid game={game} skins={skins} viewCols={viewCols} /></div>
+        </div>
       )}
 
       {/* FAB เพิ่มสกิน — อยู่เหนือแถบล่าง */}

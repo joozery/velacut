@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Grid2x2, Grid3x3, Redo2, ScanSearch, Share2, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { Grid2x2, Grid3x3, LayoutGrid, Redo2, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -10,8 +9,7 @@ import type { GameSlug } from "@/lib/games";
 import { cn, fmt } from "@/lib/utils";
 import { VIEW_COLS_MAX, VIEW_COLS_MIN, useEditorStore } from "@/stores/editor-store";
 import { toast } from "@/stores/toast-store";
-import { DetectDialog } from "./detect-dialog";
-import { encodeShare, useGrid } from "./use-grid";
+import { useGrid } from "./use-grid";
 import { useEditorStep } from "./use-editor-step";
 
 const t = copy.editor.toolbar;
@@ -46,19 +44,7 @@ const Divider = () => <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-bor
 function GridTools({ game }: { game: GameSlug }) {
   const { hydrated, skins, viewCols, canUndo, canRedo } = useGrid(game);
   const s = useEditorStore.getState;
-  const [detectOpen, setDetectOpen] = useState(false);
   const empty = skins.length === 0;
-
-  const share = async () => {
-    if (empty) return toast({ title: a.shareEmpty });
-    const url = `${window.location.origin}/generate/${game}?step=grid&s=${encodeURIComponent(encodeShare(game, skins))}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({ title: a.shareCopied, description: a.shareCopiedDesc, variant: "success" });
-    } catch {
-      toast({ title: a.shareFailed, variant: "error" });
-    }
-  };
 
   const sort = () => {
     if (skins.length < 2) return toast({ title: a.nothingToSort });
@@ -76,9 +62,7 @@ function GridTools({ game }: { game: GameSlug }) {
       <IconAction label={t.undo} icon={<Undo2 aria-hidden />} onClick={() => s().undo(game)} disabled={!hydrated || !canUndo} />
       <IconAction label={t.redo} icon={<Redo2 aria-hidden />} onClick={() => s().redo(game)} disabled={!hydrated || !canRedo} />
       <Divider />
-      <LabeledAction label={t.aiSort} icon={<Sparkles aria-hidden />} onClick={sort} disabled={!hydrated || skins.length < 2} />
-      <LabeledAction label={t.detect} icon={<ScanSearch aria-hidden />} onClick={() => setDetectOpen(true)} disabled={!hydrated} />
-      <LabeledAction label={t.share} icon={<Share2 aria-hidden />} onClick={share} disabled={!hydrated || empty} />
+      <LabeledAction label="เรียงสกิน" icon={<Sparkles aria-hidden />} onClick={sort} disabled={!hydrated || skins.length < 2} />
       <LabeledAction label={t.clear} icon={<Trash2 aria-hidden />} onClick={clear} disabled={!hydrated || empty} />
       {/* จำนวนคอลัมน์ในพื้นที่ทำงาน */}
       <div className="ml-2 hidden h-9 w-52 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface-2/50 px-3 md:flex" title={t.columns}>
@@ -95,7 +79,6 @@ function GridTools({ game }: { game: GameSlug }) {
         <Grid3x3 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <span className="w-4 text-right text-sm font-semibold tabular-nums">{viewCols}</span>
       </div>
-      <DetectDialog game={game} open={detectOpen} onOpenChange={setDetectOpen} />
     </>
   );
 }
@@ -110,11 +93,11 @@ export function EditorToolbar() {
 
   return (
     <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-surface px-3 py-2 sm:px-5">
-      <p className="flex shrink-0 items-center gap-2 text-sm font-medium">
-        <span aria-hidden className="size-1.5 rounded-full bg-primary" />
+      <p className="flex shrink-0 items-center gap-2 text-xs font-semibold sm:text-sm">
+        <span aria-hidden className="grid size-8 place-items-center rounded-xl bg-primary-soft text-primary"><LayoutGrid className="size-4" /></span>
         {game.mode === "library" && step === "grid" ? copy.editor.grid.boardLabel : copy.editor.steps[step]}
         {game.mode === "library" && step === "grid" && skins.length > 0 && (
-          <span className="text-muted-foreground tabular-nums">{fmt(copy.editor.bottomBar.skinCount, { n: skins.length })}</span>
+          <span className="rounded-full bg-primary-soft px-2 py-1 text-[10px] text-primary tabular-nums">{fmt(copy.editor.bottomBar.skinCount, { n: skins.length })}</span>
         )}
       </p>
       {showTools && (
