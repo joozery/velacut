@@ -11,6 +11,7 @@ type UserDoc = {
   email: string;
   image?: string | null;
   passwordHash?: string;
+  sessionVersion?: number;
   providers: string[];
   role?: "admin";
   roleGrantedBy?: string;
@@ -56,13 +57,31 @@ export async function findUserByEmail(email: string) {
   return doc ? toUser(doc) : null;
 }
 
+export async function findUserById(id: string) {
+  const doc = await (await users()).findOne({ _id: id });
+  return doc ? toUser(doc) : null;
+}
+
+export async function updateDisplayName(id: string, name: string) {
+  return (await (await users()).updateOne({ _id: id }, { $set: { name, updatedAt: new Date() } })).matchedCount === 1;
+}
+
+/** Compare the previous hash so concurrent password changes cannot overwrite each other. */
+export async function replaceOwnPassword(id: string, previousHash: string | undefined, password: string) {
+  const result = await (await users()).updateOne(
+    { _id: id, passwordHash: previousHash ?? { $exists: false } },
+    { $set: { passwordHash: await hashPassword(password), updatedAt: new Date() }, $inc: { sessionVersion: 1 }, $addToSet: { providers: "credentials" } },
+  );
+  return result.matchedCount === 1;
+}
+
 export async function userExists(id: string) {
   return Boolean(await (await users()).findOne({ _id: id }, { projection: { _id: 1 } }));
 }
 
 /** ตั้งรหัสผ่านใหม่ (ใช้โดยผู้ดูแล) — บัญชี Google จะได้วิธีเข้าด้วยรหัสผ่านเพิ่ม */
 export async function setPassword(id: string, password: string) {
-  const r = await (await users()).updateOne({ _id: id }, { $set: { passwordHash: await hashPassword(password), updatedAt: new Date() }, $addToSet: { providers: "credentials" } });
+  const r = await (await users()).updateOne({ _id: id }, { $set: { passwordHash: await hashPassword(password), updatedAt: new Date() }, $inc: { sessionVersion: 1 }, $addToSet: { providers: "credentials" } });
   return r.matchedCount === 1;
 }
 

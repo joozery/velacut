@@ -86,7 +86,7 @@ function Field({ name, label, type = "text", autoComplete, error, defaultValue, 
   );
 }
 
-export function AuthForm({ mode, callbackUrl, urlError, googleEnabled }: { mode: Mode; callbackUrl: string; urlError?: string; googleEnabled: boolean }) {
+export function AuthForm({ mode, callbackUrl, urlError, googleEnabled, notice }: { mode: Mode; callbackUrl: string; urlError?: string; googleEnabled: boolean; notice?: string }) {
   const [state, formAction] = useActionState<FormState, FormData>(submitCredentials.bind(null, mode), {});
   const [staleGoogleAction, setStaleGoogleAction] = useState(false);
   const c = COPY[mode];
@@ -103,6 +103,7 @@ export function AuthForm({ mode, callbackUrl, urlError, googleEnabled }: { mode:
     <div>
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{c.title}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{c.desc}</p>
+      {notice && <p role="status" className="mt-5 rounded-2xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
 
       {(error || staleGoogleAction) && (
         <div role="alert" className="mt-5 rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger">

@@ -1,7 +1,7 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { findUserByEmail, touchLastLogin, upsertOAuthUser, userExists, verifyPassword } from "@/lib/auth/user-store";
+import { findUserByEmail, findUserById, touchLastLogin, upsertOAuthUser, verifyPassword } from "@/lib/auth/user-store";
 import { validateCredentials } from "@/lib/auth/schema";
 
 export const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
@@ -20,7 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (Object.keys(validateCredentials(email, password)).length) throw new CredentialsSignin();
         const user = await findUserByEmail(email);
         if (!user?.passwordHash || !(await verifyPassword(password, user.passwordHash))) throw new CredentialsSignin();
-        return { id: user.id, name: user.name, email: user.email, image: user.image ?? null };
+        return { id: user.id, name: user.name, email: user.email, image: user.image ?? null, sessionVersion: user.sessionVersion ?? 0 };
       },
     }),
   ],
@@ -42,12 +42,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.sub = stored.id;
         token.name = stored.name;
         token.picture = stored.image ?? token.picture;
+        token.sessionVersion = stored.sessionVersion ?? 0;
       } else if (user?.id) {
         token.sub = user.id;
         token.picture = user.image ?? null;
-      } else if (token.sub && !(await userExists(token.sub))) {
-        // บัญชีถูกลบแล้ว → ตัด session ทิ้ง
-        return null;
+        token.sessionVersion = (user as { sessionVersion?: number }).sessionVersion ?? 0;
+      } else if (token.sub) {
+        const stored = await findUserById(token.sub);
+        // Deleted accounts and sessions issued before a password change are no longer valid.
+        if (!stored || (token.sessionVersion ?? 0) !== (stored.sessionVersion ?? 0)) return null;
+        token.name = stored.name;
+        token.picture = stored.image ?? null;
       }
       return token;
     },

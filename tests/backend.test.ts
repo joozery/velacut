@@ -563,3 +563,74 @@ test("wallet-transfer: verifies the ticket receiver, archives slips and credits 
   assert.equal(report.totals.revenue, ticket.payAmount);
   assert.equal(report.days[0].truemoney, ticket.payAmount);
 });
+
+test("profile: safe account fields, own name changes and validation", async () => {
+  const { getProfile, saveProfileName } = await import("../lib/server/profile");
+  const profile = await getProfile(alice);
+  assert.equal(profile.email, A);
+  assert.equal(profile.hasPassword, true);
+  assert.equal("passwordHash" in profile, false);
+  assert.equal("sessionVersion" in profile, false);
+  assert.deepEqual(await saveProfileName(alice, "  Alice Updated  "), { name: "Alice Updated" });
+  assert.equal((await getProfile(alice)).name, "Alice Updated");
+  assert.equal((await getProfile(bob)).name, "Bob");
+  assert.equal((await m.users.findUserById(alice))?.email, A);
+  await assert.rejects(saveProfileName(alice, " "), /2–40/);
+  await assert.rejects(saveProfileName(alice, "x".repeat(41)), /2–40/);
+  await assert.rejects(saveProfileName("missing-profile", "New Name"), /ไม่พบบัญชี/);
+  assert.equal((await getProfile(alice)).name, "Alice Updated");
+});
+
+test("profile: changing a password requires the old password and invalidates old sessions", async () => {
+  const { changeProfilePassword } = await import("../lib/server/profile");
+  const password = "a-new-password-456";
+  await assert.rejects(changeProfilePassword(alice, { current: "wrong", password, confirm: password }), /ปัจจุบันไม่ถูกต้อง/);
+  await assert.rejects(changeProfilePassword(alice, { current: "velcut-test-123", password: "short", confirm: "short" }), /8–128/);
+  await assert.rejects(changeProfilePassword(alice, { current: "velcut-test-123", password, confirm: "different" }), /ไม่ตรงกัน/);
+  await assert.rejects(changeProfilePassword(alice, { current: "velcut-test-123", password: "velcut-test-123", confirm: "velcut-test-123" }), /ต่างจากเดิม/);
+  assert.equal((await m.users.findUserById(alice))?.sessionVersion ?? 0, 0);
+  await changeProfilePassword(alice, { current: "velcut-test-123", password, confirm: password });
+  const updated = await m.users.findUserById(alice);
+  assert.equal(updated?.sessionVersion, 1);
+  assert.ok(await m.users.verifyPassword(password, updated!.passwordHash!));
+  assert.equal(await m.users.verifyPassword("velcut-test-123", updated!.passwordHash!), false);
+  assert.ok(await m.users.verifyPassword("velcut-test-123", (await m.users.findUserById(bob))!.passwordHash!));
+  assert.equal((await m.users.findUserById(bob))?.sessionVersion ?? 0, 0);
+});
+
+test("profile: Google-only account can add a password without exposing credentials", async () => {
+  const { getProfile, changeProfilePassword } = await import("../lib/server/profile");
+  const user = await m.users.upsertOAuthUser({ provider: "google", email: "google@velcut.test", name: "Google User", image: "https://example.test/avatar.png" });
+  assert.equal((await getProfile(user.id)).hasPassword, false);
+  await changeProfilePassword(user.id, { current: "", password: "google-password-123", confirm: "google-password-123" });
+  const profile = await getProfile(user.id);
+  assert.equal(profile.hasPassword, true);
+  assert.deepEqual(profile.providers, ["google", "credentials"]);
+  assert.equal(profile.image, "https://example.test/avatar.png");
+  assert.equal((await m.users.findUserById(user.id))?.sessionVersion, 1);
+});
+
+test("profile: concurrent password changes accept only one update", async () => {
+  const { changeProfilePassword } = await import("../lib/server/profile");
+  const outcomes = await Promise.allSettled(["new-password-first", "new-password-second"].map(password => changeProfilePassword(alice, { current: "velcut-test-123", password, confirm: password })));
+  assert.equal(outcomes.filter(r => r.status === "fulfilled").length, 1);
+  assert.equal((await m.users.findUserById(alice))?.sessionVersion, 1);
+});
+
+test("profile: sessions refresh the saved name and reject tokens from before a password change", async () => {
+  const { handlers } = await import("../auth");
+  const { encode } = await import("next-auth/jwt");
+  const { NextRequest } = await import("next/server");
+  const { saveProfileName, changeProfilePassword } = await import("../lib/server/profile");
+  assert.ok(process.env.AUTH_SECRET);
+  const token = await encode({ token: { sub: alice, email: A, name: "Old Name", provider: "credentials", sessionVersion: 0 }, secret: process.env.AUTH_SECRET!, salt: "authjs.session-token", maxAge: 60 });
+  const request = () => new NextRequest("http://localhost:3000/api/auth/session", { headers: { cookie: `authjs.session-token=${token}` } });
+  await saveProfileName(alice, "Refreshed Name");
+  const before = await handlers.GET(request());
+  assert.equal(before.status, 200);
+  assert.equal((await before.json()).user.name, "Refreshed Name");
+  await changeProfilePassword(alice, { current: "velcut-test-123", password: "new-password-session", confirm: "new-password-session" });
+  const after = await handlers.GET(request());
+  assert.equal(after.status, 200);
+  assert.equal(await after.json(), null);
+});
