@@ -3,6 +3,7 @@ import type { TxRow } from "@/lib/server/admin";
 import { formatBaht } from "@/lib/format";
 import { Coins, Empty, KIND_LABEL, StatusBadge, formatDateTime } from "./ui";
 import { TopupActions } from "./topup-actions";
+import { TopupEvidenceDialog } from "./topup-evidence-dialog";
 
 /** ตารางรายการ — ถ้า showActions จะมีปุ่มยืนยัน/ปฏิเสธสำหรับคำสั่งเติมที่ยืนยันได้ */
 export function TxTable({ rows, showActions = false, showUser = true }: { rows: TxRow[]; showActions?: boolean; showUser?: boolean }) {
@@ -33,7 +34,7 @@ export function TxTable({ rows, showActions = false, showUser = true }: { rows: 
                   <p className="mt-0.5 text-xs text-muted-foreground">{KIND_LABEL[r.kind]} · {r.description}</p>
                   <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">{r.id}</p>
                   {r.kind === "adjust" && <p className="mt-1 text-xs text-muted-foreground">เหตุผล: {r.note}</p>}
-                  {r.kind === "topup" && <Link href={`/admin/topups/${r.id}/receipts`} className="mt-2 inline-block text-xs text-primary hover:underline">ดูหลักฐาน / ผลตรวจสลิป</Link>}
+                  {r.kind === "topup" && <TopupEvidenceDialog id={r.id} />}
                   {(r.topup?.confirmedBy || r.topup?.rejectedBy) && <p className="mt-1 text-[11px] text-muted-foreground">{r.topup.confirmedBy ? "ยืนยันโดย" : "ปฏิเสธโดย"} {r.topup.confirmedBy ?? r.topup.rejectedBy}</p>}
                 </td>
                 {showUser && <td className="max-w-48 px-3 py-3"><Link href={`/admin/users/${r.userId}`} className="block truncate text-xs text-primary hover:underline">{r.userEmail}</Link></td>}
