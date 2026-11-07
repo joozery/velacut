@@ -24,6 +24,7 @@ const TITLES: [string, string][] = [
   ["/admin/transactions", "รายการทั้งหมด"],
   ["/admin/admins", "ผู้ดูแลระบบ"],
   ["/admin/settings", "ตั้งค่าเครดิต"],
+  ["/admin/templates", "เทมเพลตป้าย"],
   ["/admin/payments", "ช่องทางชำระเงิน"],
   ["/admin/promo", "โปรโมชัน"],
   ["/admin/daily", "เช็กอินรายวัน"],

@@ -23,6 +23,8 @@ export type Decoration = {
   coverId: string;
   /** แรงค์ของไอดี (ตราแรงค์ในเกม) — ไม่เลือก = ไม่แสดงบนป้าย */
   rank?: RankId;
+  /** เทมเพลต B: แบนเนอร์ของลูกค้าเอง (URL รูปที่อัปโหลดขึ้น R2) */
+  banner?: string;
 };
 
 export const DEFAULT_DECORATION: Decoration = { code: "", heroes: 0, price: 0, winrate: 0, matches: 0, down: 0, honor: 0, tagline: "พร้อมเปลี่ยนเมลทันที", accent: "#fcd34d", coverId: "" };

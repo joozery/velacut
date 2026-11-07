@@ -8,6 +8,8 @@ import { RANKS } from "@/lib/ranks";
 import type { Decoration, EditorDoc } from "@/stores/editor-store";
 import { collections, newId, type TxDoc } from "./collections";
 import { debitSpendable } from "./wallet";
+import { getTemplatesConfig } from "./templates";
+import { isUploadedUrl } from "./media";
 
 export class UserError extends Error {}
 
@@ -18,10 +20,12 @@ function sanitizeDecoration(raw: unknown): Decoration | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const d = raw as Record<string, unknown>;
   const rank = RANKS.some((r) => r.id === d.rank) ? (d.rank as Decoration["rank"]) : undefined;
+  // แบนเนอร์รับเฉพาะรูปที่อัปโหลดผ่านระบบเรา
+  const banner = typeof d.banner === "string" && isUploadedUrl(d.banner, "banners") ? d.banner : undefined;
   return {
     code: str(d.code, 40), heroes: num(d.heroes, 9999), price: num(d.price), winrate: num(d.winrate, 100), matches: num(d.matches),
     down: num(d.down), honor: num(d.honor), tagline: str(d.tagline, 120), accent: /^#[0-9a-f]{6}$/i.test(String(d.accent)) ? String(d.accent) : "#fcd34d",
-    coverId: str(d.coverId, 120), ...(rank ? { rank } : {}),
+    coverId: str(d.coverId, 120), ...(rank ? { rank } : {}), ...(banner ? { banner } : {}),
   };
 }
 
@@ -43,6 +47,7 @@ export function parsePosterInput(game: unknown, rawDoc: unknown, rawCols: unknow
   if (!Number.isInteger(cols) || cols < 1 || cols > MAX_SKINS) throw new UserError("จำนวนคอลัมน์ไม่ถูกต้อง");
   const docCols = typeof d.cols === "number" && Number.isInteger(d.cols) ? d.cols : null;
   const decoration = sanitizeDecoration(d.decoration);
+  if (template === "b" && !decoration?.banner) throw new UserError("เทมเพลต B ต้องอัปโหลดแบนเนอร์ของคุณก่อนดาวน์โหลด");
   return { game: g, cols, doc: { skins, cols: docCols, template, output, ...(decoration ? { decoration } : {}) } };
 }
 
@@ -64,9 +69,12 @@ export async function purchasePoster(userId: string, input: ReturnType<typeof pa
   if (existing?.status === "completed") return toPosterOrder(existing);
   if (existing) throw new UserError("กำลังดำเนินการรายการนี้อยู่ กรุณาลองใหม่อีกครั้ง");
 
-  const amount = toUnits(payableTotal(doc.skins.length, doc.template, doc.output));
+  // ราคาและการเปิด/ปิดแบบป้ายอ่านจากหลังบ้านทุกครั้ง — ไม่เชื่อราคาจาก client
+  const templates = await getTemplatesConfig();
+  if (!templates[doc.template].enabled) throw new UserError("แบบป้ายนี้ปิดให้บริการชั่วคราว กรุณาเลือกแบบอื่น");
+  const amount = toUnits(payableTotal(doc.skins.length, doc.template, doc.output, templates));
   const now = new Date();
-  const templateName = doc.template === "none" ? "ไม่มีเทมเพลต" : `เทมเพลต ${doc.template.toUpperCase()}`;
+  const templateName = templates[doc.template].name;
   const tx: TxDoc = {
     _id: newId("PS"), userId, kind: "poster", status: "pending", amount: -amount,
     title: "สร้างป้าย Mobile Legends",

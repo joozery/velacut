@@ -5,6 +5,8 @@ import { copy } from "@/lib/copy";
 import { getAppearanceSafe } from "@/lib/server/appearance";
 import { appearanceTokens } from "@/lib/appearance";
 import { AppearanceProvider } from "@/components/shared/appearance-provider";
+import { TemplatesProvider } from "@/components/shared/templates-provider";
+import { getTemplatesSafe } from "@/lib/server/templates";
 import "./globals.css";
 
 const font = Noto_Sans_Thai({
@@ -31,7 +33,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const site = await getAppearanceSafe();
+  const [site, templates] = await Promise.all([getAppearanceSafe(), getTemplatesSafe()]);
   const tokens = (color: string) => Object.entries(appearanceTokens(color)).map(([key, value]) => `${key}:${value}`).join(";");
   return (
     // ต้องใส่ font.variable ที่ <html> เพราะ --font-sans ถูกประกาศที่ :root และอ้าง var(--font-thai)
@@ -50,7 +52,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           >
             {copy.common.skipToContent}
           </a>
-          <AppearanceProvider value={site}><Providers>{children}</Providers></AppearanceProvider>
+          <AppearanceProvider value={site}><TemplatesProvider value={templates}><Providers>{children}</Providers></TemplatesProvider></AppearanceProvider>
         </velacut-app>
       </body>
     </html>

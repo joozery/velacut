@@ -7,6 +7,15 @@ import type { Skin } from "@/lib/catalog";
 import { getTier } from "@/lib/tiers";
 import { cn } from "@/lib/utils";
 import { placeholderGradient } from "./placeholders";
+import { exportSafeSrc } from "@/lib/media-url";
+import { useAppearance } from "./appearance-provider";
+
+import { SkinWatermarkOverlay } from "./skin-watermark";
+
+function ThumbWatermark() {
+  const site = useAppearance();
+  return <SkinWatermarkOverlay config={site.watermark} siteName={site.name} />;
+}
 
 /**
  * การ์ดสกินพร้อมภาพจริง: เลขลำดับ + ชื่อ (ซ่อนป้ายระดับเป็นค่าเริ่มต้น)
@@ -22,6 +31,8 @@ export function SkinThumb({
   className,
   priority,
   sizes = "120px",
+  watermark = false,
+  exportSafe = false,
 }: {
   skin: Skin;
   index?: number;
@@ -36,6 +47,10 @@ export function SkinThumb({
   className?: string;
   priority?: boolean;
   sizes?: string;
+  /** แสดงลายน้ำบนภาพ (พื้นที่จัดป้าย / ป้ายตัวอย่าง) */
+  watermark?: boolean;
+  /** อยู่บนป้ายที่จะ export — ดึงรูป R2 ผ่านโดเมนเว็บเรา */
+  exportSafe?: boolean;
 }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const failed = failedImage === skin.image;
@@ -49,7 +64,7 @@ export function SkinThumb({
         </div>
       ) : (
         <Image
-          src={skin.image}
+          src={exportSafe ? exportSafeSrc(skin.image) : skin.image}
           alt=""
           fill
           sizes={sizes}
@@ -60,6 +75,7 @@ export function SkinThumb({
           className="object-cover select-none"
         />
       )}
+      {watermark && <ThumbWatermark />}
       {index !== undefined && (
         <span
           className={cn(

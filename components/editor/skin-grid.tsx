@@ -60,7 +60,7 @@ function SortableCard({ skin, index, onRemove }: { skin: Skin; index: number; on
         )}
       >
         <m.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 420, damping: 28 }}>
-          <SkinThumb skin={skin} hideTier size="lg" sizes="(min-width: 1024px) 18vw, 30vw" priority={index <= 6} className="rounded-lg ring-1 ring-border" />
+          <SkinThumb skin={skin} hideTier size="lg" sizes="(min-width: 1024px) 18vw, 30vw" priority={index <= 6} watermark className="rounded-lg ring-1 ring-border" />
         </m.div>
       </div>
       {/* ปุ่มลบเป็น sibling ไม่ซ้อนใน element ที่ลากได้ */}

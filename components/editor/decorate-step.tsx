@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Check, Eye, Minus, Plus, Redo2, ImagePlus, LayoutTemplate, Palette, Type, Undo2 } from "lucide-react";
+import { useEditorTemplates } from "./use-templates";
+import { BannerUpload } from "./banner-upload";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +40,7 @@ export function DecorateStep({ game }: { game: GameSlug }) {
   const [activeTool, setActiveTool] = useState<Tool>("text");
   const setDecoration = useEditorStore((s) => s.setDecoration);
   const setTemplate = useEditorStore((s) => s.setTemplate);
+  const { cfg: tplCfg, list: tplList } = useEditorTemplates(game);
   const decoration = { ...DEFAULT_DECORATION, ...doc.decoration };
   const patch = (value: Partial<Decoration>) => setDecoration(game, value);
 
@@ -53,10 +56,10 @@ export function DecorateStep({ game }: { game: GameSlug }) {
             <Label htmlFor={`${prefix}-decorate-template`}>แบบป้าย</Label>
             <Select value={doc.template} onValueChange={(v) => setTemplate(game, v as typeof doc.template)}>
               <SelectTrigger id={`${prefix}-decorate-template`} className="h-12 w-full"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="none">ตารางสกินอย่างเดียว</SelectItem><SelectItem value="a">เทมเพลต A</SelectItem><SelectItem value="b">เทมเพลต B</SelectItem></SelectContent>
+              <SelectContent>{tplList.map((id) => <SelectItem key={id} value={id}>{tplCfg[id].name}</SelectItem>)}</SelectContent>
             </Select>
           </div>}
-          {doc.template === "none" ? <p className="rounded-2xl bg-primary-soft p-4 text-sm text-primary-soft-foreground">แบบนี้แสดงเฉพาะตารางสกิน เลือกเทมเพลต A หรือ B เพื่อเพิ่มข้อมูลไอดีและภาพหน้าปก</p> : <>
+          {doc.template === "b" ? (tool !== "template" && <BannerUpload value={decoration.banner} onChange={(banner) => patch({ banner })} />) : doc.template === "none" ? <p className="rounded-2xl bg-primary-soft p-4 text-sm text-primary-soft-foreground">แบบนี้แสดงเฉพาะตารางสกิน เลือกเทมเพลต A หรือ B เพื่อเพิ่มข้อมูลไอดีและภาพหน้าปก</p> : <>
             {(!tool || tool === "text") && <><div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-code`}>ชื่อป้าย / รหัสไอดี</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-code`} value={decoration.code} maxLength={40} placeholder="เช่น ไอดี MLBB 001" onChange={(e) => patch({ code: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
               {fields.filter(([key]) => doc.template === "b" || !["down", "honor"].includes(key)).map(([key, label]) => <div key={key} className="grid gap-2">

@@ -29,20 +29,22 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const page = (p: unknown) => Math.max(1, Math.floor(Number(p)) || 1);
 
 export type TxRow = {
-  id: string; userId: string; userEmail: string; kind: HistoryKind; status: HistoryStatus; coins: number;
+  id: string; userId: string; userEmail: string; userName: string; userImage: string | null; kind: HistoryKind; status: HistoryStatus; coins: number;
   title: string; description: string; note: string; date: string;
   topup?: { method: "promptpay" | "truemoney" | "truemoney_wallet"; baht: number; payAmount: number; expiresAt: string; completedAt?: string; failReason?: string; confirmedBy?: string; rejectedBy?: string };
 };
 
-async function emailsFor(userIds: string[]) {
+type UserLite = { email: string; name: string; image: string | null };
+async function usersFor(userIds: string[]) {
   const db = await getDb();
-  const users = await db.collection<UserRow>("users").find({ _id: { $in: [...new Set(userIds)] } }, { projection: { email: 1 } }).toArray();
-  return new Map(users.map((u) => [u._id, u.email]));
+  const users = await db.collection<UserRow>("users").find({ _id: { $in: [...new Set(userIds)] } }, { projection: { email: 1, name: 1, image: 1 } }).toArray();
+  return new Map<string, UserLite>(users.map((u) => [u._id, { email: u.email, name: u.name, image: u.image ?? null }]));
 }
 
-function toRow(t: TxDoc, emails: Map<string, string>): TxRow {
+function toRow(t: TxDoc, users: Map<string, UserLite>): TxRow {
+  const u = users.get(t.userId);
   return {
-    id: t._id, userId: t.userId, userEmail: emails.get(t.userId) ?? "(ลบแล้ว)", kind: t.kind, status: t.status, coins: fromUnits(t.amount),
+    id: t._id, userId: t.userId, userEmail: u?.email ?? "(ลบแล้ว)", userName: u?.name ?? "ผู้ใช้ที่ถูกลบ", userImage: u?.image ?? null, kind: t.kind, status: t.status, coins: fromUnits(t.amount),
     title: t.title, description: t.description, note: t.note, date: t.createdAt.toISOString(),
     ...(t.topup ? { topup: { method: t.topup.method, baht: t.topup.baht, payAmount: t.topup.payAmount / 100, expiresAt: t.topup.expiresAt.toISOString(), completedAt: t.status === "completed" ? (t.completedAt ?? t.updatedAt).toISOString() : undefined, failReason: t.topup.failReason, confirmedBy: t.topup.confirmedBy, rejectedBy: t.topup.rejectedBy } } : {}),
   };
@@ -94,7 +96,7 @@ export async function listTransactions(opts: { kind?: string; status?: string; q
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const p = Math.min(page(opts.page), pages);
   const docs = await txs.find(filter).sort({ createdAt: -1, _id: -1 }).skip((p - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
-  const emails = await emailsFor(docs.map((d) => d.userId));
+  const emails = await usersFor(docs.map((d) => d.userId));
   const counts = { all: 0, pending: 0, completed: 0, failed: 0 };
   for (const row of grouped) {
     if (row._id === "pending" || row._id === "completed" || row._id === "failed") { counts[row._id] = row.count; counts.all += row.count; }

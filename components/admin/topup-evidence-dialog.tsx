@@ -12,7 +12,7 @@ import { StatusBadge, fieldClass, formatDateTime } from "./ui";
 const labels = { checking: "กำลังตรวจสอบ", verified: "สลิปผ่านการตรวจ", rejected: "ตรวจสลิปไม่ผ่าน" };
 const methods = { promptpay: "PromptPay", truemoney: "ซองอั่งเปา TrueMoney", truemoney_wallet: "TrueMoney Wallet" };
 
-export function TopupEvidenceDialog({ id }: { id: string }) {
+export function TopupEvidenceDialog({ id, compact = false }: { id: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<TopupEvidence | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,9 @@ export function TopupEvidenceDialog({ id }: { id: string }) {
     if (value) { setData(null); setSelected(""); void load(); }
     else { request.current++; setLoading(false); }
   }}>
-    <DialogTrigger asChild><button type="button" className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary underline-offset-4 hover:underline"><FileImage className="size-3.5" aria-hidden />ดูหลักฐาน / ผลตรวจสลิป</button></DialogTrigger>
+    <DialogTrigger asChild>{compact
+      ? <button type="button" title="ดูหลักฐาน / ผลตรวจสลิป" className="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-surface px-2.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-primary"><FileImage className="size-3.5" aria-hidden />หลักฐาน</button>
+      : <button type="button" className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary underline-offset-4 hover:underline"><FileImage className="size-3.5" aria-hidden />ดูหลักฐาน / ผลตรวจสลิป</button>}</DialogTrigger>
     <DialogContent className="no-scrollbar max-w-md gap-3 p-4 sm:max-w-[680px] sm:p-5">
       <DialogHeader><DialogTitle>หลักฐาน / ผลตรวจสลิป</DialogTitle><DialogDescription className="break-all font-mono text-[10px]">{id}</DialogDescription></DialogHeader>
       {loading && !data && <div role="status" className="flex min-h-44 items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-5 animate-spin" aria-hidden />กำลังโหลดหลักฐาน…</div>}

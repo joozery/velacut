@@ -54,6 +54,7 @@ after(async () => {
 });
 
 const doc = (output: "clean" | "watermark" = "clean"): EditorDoc => ({ skins: m.catalog.getCatalog("mlbb").skins.slice(0, 12).map((s) => s.id), cols: null, template: "a", output });
+const DEFAULT_DECO = { code: "", heroes: 0, price: 0, winrate: 0, matches: 0, down: 0, honor: 0, tagline: "", accent: "#fcd34d", coverId: "" };
 const give = (userId: string, transferable: number, bonus = 0) => m.wallet.credit(userId, { transferable: transferable * 100, bonus: bonus * 100 });
 const balance = async (userId: string) => (await m.account.getAccount(userId)).wallet;
 
@@ -479,6 +480,16 @@ test("appearance: validates assets, colors and internal links before saving", as
   assert.equal(legacy.hero.wordmarkImage, DEFAULT_APPEARANCE.hero.wordmarkImage);
   assert.equal(legacy.hero.wordmarkAnimate, true);
   assert.equal(parseAppearance({ ...defaults, hero: { ...defaults.hero, wordmarkAnimate: false } }).hero.wordmarkAnimate, false);
+  // ลายน้ำบนสกิน: ค่าเดิมที่ยังไม่มี watermark ใช้ค่าเริ่มต้น และตรวจรูป/ช่วงค่า
+  const { watermark: _wm, ...noWatermark } = defaults;
+  void _wm;
+  assert.deepEqual(parseAppearance(noWatermark).watermark, DEFAULT_APPEARANCE.watermark);
+  const wm = (patch: object) => ({ ...defaults, watermark: { ...defaults.watermark, ...patch } });
+  assert.deepEqual(parseAppearance(wm({ mode: "image", text: "  shop  ", opacity: 60, size: 150, enabled: false })).watermark, { enabled: false, mode: "image", text: "shop", image: defaults.watermark.image, opacity: 60, size: 150 });
+  assert.throws(() => parseAppearance(wm({ image: "https://evil.test/w.png" })), /รูปลายน้ำ/);
+  assert.throws(() => parseAppearance(wm({ opacity: 100 })), /ความเข้ม/);
+  assert.throws(() => parseAppearance(wm({ size: 10 })), /ขนาด/);
+  assert.throws(() => parseAppearance(wm({ text: "x".repeat(25) })), /ข้อความลายน้ำ/);
 });
 
 test("appearance: persists storefront customization with audit metadata", async () => {
@@ -764,4 +775,42 @@ test("admin topups: status summaries respect search and payment method while sta
   const overflow = await m.admin.listTransactions({ kind: "topup", page: 999 });
   assert.equal(overflow.page, 1);
   assert.equal(overflow.rows.length, 2);
+});
+
+test("templates: validates config, charges admin price, blocks disabled templates", async () => {
+  const tpl = await import("../lib/server/templates");
+  const cfg = await tpl.getTemplatesConfig();
+  assert.equal(cfg.a.price, 15);
+  assert.throws(() => tpl.parseTemplates({ none: { enabled: false }, a: { enabled: false }, b: { enabled: false } }), /อย่างน้อย 1 แบบ/);
+  assert.throws(() => tpl.parseTemplates({ a: { price: 20, compareAtPrice: 10 } }), /ราคาก่อนลด/);
+  assert.throws(() => tpl.parseTemplates({ a: { price: -1 } }), /ราคา/);
+  assert.throws(() => tpl.parseTemplates({ a: { name: "  " } }), /ชื่อ/);
+  assert.equal(cfg.a.banner, "/logo/bannerexam.png");
+  assert.throws(() => tpl.parseTemplates({ a: { banner: "https://evil.test/a.png" } }), /ภาพหัวป้าย/);
+  assert.equal(tpl.parseTemplates({ a: { banner: "/images/hero-cover-create-v1.webp" } }).a.banner, "/images/hero-cover-create-v1.webp");
+
+  await tpl.saveTemplates({ ...cfg, a: { ...cfg.a, price: 5, name: "แบบโปร" } }, "test");
+  await give(alice, 100);
+  const order = await m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", doc(), 6));
+  assert.equal(order.amount, 12 * 0.3 + 5);
+  const [tx] = await m.account.listHistory(alice);
+  assert.match(tx.description, /แบบโปร/);
+
+  // ป้ายที่ซื้อแล้วโหลดซ้ำได้แม้แบบนั้นถูกปิดภายหลัง แต่ซื้อใหม่ไม่ได้
+  await tpl.saveTemplates({ ...cfg, a: { ...cfg.a, enabled: false } }, "test");
+  assert.equal((await m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", doc(), 6))).id, order.id);
+  await assert.rejects(m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", doc(), 5)), /ปิดให้บริการ/);
+});
+
+test("template B: requires the customer's own uploaded banner", async () => {
+  const { publicBaseUrl } = await import("../lib/server/storage");
+  const b = (banner?: string) => ({ ...doc(), template: "b" as const, decoration: { ...DEFAULT_DECO, ...(banner ? { banner } : {}) } });
+  assert.throws(() => m.poster.parsePosterInput("mlbb", b(), 6), /แบนเนอร์/);
+  assert.throws(() => m.poster.parsePosterInput("mlbb", b("https://evil.test/banner.webp"), 6), /แบนเนอร์/);
+  const base = publicBaseUrl();
+  if (!base) return; // ไม่มี R2 ในเครื่องนี้
+  const url = `${base}/banners/2026/11/${crypto.randomUUID()}.webp`;
+  assert.equal(m.poster.parsePosterInput("mlbb", b(url), 6).doc.decoration?.banner, url);
+  // รูปจากโฟลเดอร์อื่นของเราไม่นับเป็นแบนเนอร์
+  assert.throws(() => m.poster.parsePosterInput("mlbb", b(`${base}/promo/2026/11/${crypto.randomUUID()}.webp`), 6), /แบนเนอร์/);
 });

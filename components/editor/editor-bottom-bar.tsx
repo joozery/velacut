@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
 import { MIN_SKINS, calcTotal, payableTotal } from "@/lib/pricing";
+import { useTemplates } from "@/components/shared/templates-provider";
+import { resolveTemplate } from "@/lib/templates";
 import { cn, fmt } from "@/lib/utils";
 import { useEditorStore, useGameEditor } from "@/stores/editor-store";
 import { LayoutSelect } from "./layout-select";
@@ -25,14 +27,16 @@ export function EditorBottomBar() {
   const { hydrated, skins, viewCols } = useGrid(game.slug);
   const [previewOpen, setPreviewOpen] = useState(false);
   const isLibrary = game.mode === "library";
+  const cfg = useTemplates();
+  const template = resolveTemplate(cfg, doc.template);
   const count = hydrated ? skins.length : 0;
   // ราคาแบบไม่มีลายน้ำ = สกิน × 0.3 + ค่าเทมเพลต (ตั้งแต่ step template เป็นต้นไป)
   // checkout: แบบมีลายน้ำ = ฟรี
   const total = !isLibrary
     ? 0
     : step === "checkout"
-      ? payableTotal(count, doc.template, doc.output)
-      : calcTotal(count, step === "grid" ? "none" : doc.template);
+      ? payableTotal(count, template, doc.output, cfg)
+      : calcTotal(count, step === "grid" ? "none" : template, cfg);
   const isFinal = !isLibrary || !next;
   const missing = Math.max(0, MIN_SKINS - count);
   const blocked = isLibrary && missing > 0;

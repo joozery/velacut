@@ -4,7 +4,7 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight, ImageUp, LayoutTemplate, Loader2, Palette, RotateCcw, Save, Type } from "lucide-react";
+import { ArrowUpRight, Droplets, ImageUp, LayoutTemplate, Loader2, Palette, RotateCcw, Save, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card } from "./ui";
@@ -12,6 +12,16 @@ import { DEFAULT_APPEARANCE, HOME_SECTIONS, appearanceTokens, type Appearance } 
 import { saveAppearanceAction } from "@/app/admin/actions";
 import { toast } from "@/stores/toast-store";
 import { cn } from "@/lib/utils";
+import { SkinThumb } from "@/components/shared/skin-thumb";
+import { SkinWatermarkOverlay } from "@/components/shared/skin-watermark";
+import { getCatalog } from "@/lib/catalog";
+import type { SkinWatermark } from "@/lib/appearance";
+
+const SAMPLE = [...getCatalog("mlbb").skins].sort((a, b) => b.tierRank - a.tierRank).slice(0, 3);
+
+function WatermarkPreview({ config, name }: { config: SkinWatermark; name: string }) {
+  return <div className="grid grid-cols-3 gap-2 rounded-2xl bg-[#0b0b0d] p-3">{SAMPLE.map((skin) => <div key={skin.id} className="@container relative overflow-hidden rounded-lg"><SkinThumb skin={skin} hideTier size="lg" sizes="160px" className="rounded-lg" /><SkinWatermarkOverlay config={config} siteName={name} /></div>)}</div>;
+}
 
 function Field({ label, children }: { label: string; children: (id: string) => React.ReactNode }) {
   const id = useId();
@@ -36,7 +46,7 @@ function ImageField({ label, value, onChange, uploadReady, disabled }: { label: 
   return <div className="grid gap-2"><span className="text-xs font-medium">{label}</span><div className="flex flex-wrap items-center gap-3"><div className="grid h-20 w-36 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-surface-2 p-2"><img src={value} alt={label} className="max-h-full max-w-full object-contain" /></div><div><input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" className="hidden" aria-label={`อัปโหลด${label}`} disabled={!uploadReady || disabled || busy} onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} /><Button type="button" variant="outline" size="sm" disabled={!uploadReady || disabled || busy} onClick={() => input.current?.click()}>{busy ? <Loader2 className="animate-spin" aria-hidden /> : <ImageUp aria-hidden />}{busy ? "กำลังอัปโหลด…" : "เปลี่ยนรูป"}</Button><p className="mt-2 max-w-xs text-[11px] leading-5 text-muted-foreground">PNG / JPG / WEBP ไม่เกิน 8 MB · อัปโหลดแล้วกดบันทึกเพื่อใช้งาน</p></div></div>{error && <p role="alert" className="text-xs text-danger">{error}</p>}</div>;
 }
 
-const tabs = [{ id: "brand", label: "แบรนด์และสี", icon: Palette }, { id: "hero", label: "ส่วนบนหน้าแรก", icon: Type }, { id: "sections", label: "ส่วนที่แสดง", icon: LayoutTemplate }] as const;
+const tabs = [{ id: "brand", label: "แบรนด์และสี", icon: Palette }, { id: "hero", label: "ส่วนบนหน้าแรก", icon: Type }, { id: "sections", label: "ส่วนที่แสดง", icon: LayoutTemplate }, { id: "watermark", label: "ลายน้ำ", icon: Droplets }] as const;
 const wordmarkImages = [
   ["/images/hero-cover-create-v1.webp", "สกินโทนน้ำเงิน"],
   ["/images/hero-cover-library-v1.webp", "คลังสกิน"],
@@ -72,6 +82,7 @@ export function AppearanceForm({ initial, uploadReady }: { initial: Appearance; 
   const prefix = useId();
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const set = <K extends keyof Appearance>(key: K, next: Appearance[K]) => setValue(v => ({ ...v, [key]: next }));
+  const wm = (patch: Partial<SkinWatermark>) => setValue(v => ({ ...v, watermark: { ...v.watermark, ...patch } }));
   const hero = (patch: Partial<Appearance["hero"]>) => setValue(v => ({ ...v, hero: { ...v.hero, ...patch } }));
   const save = () => start(async () => {
     setError("");
@@ -113,6 +124,20 @@ export function AppearanceForm({ initial, uploadReady }: { initial: Appearance; 
           {tab === "sections" && <>
             <Card className="overflow-hidden"><div className="border-b border-border p-5"><h2 className="text-sm font-semibold">ส่วนที่แสดงบนหน้าแรก</h2><p className="mt-1 text-xs text-muted-foreground">เปิดเฉพาะส่วนที่ต้องการให้ผู้ใช้เห็น</p></div><div className="divide-y divide-border">{HOME_SECTIONS.map(([key,label]) => <label key={key} className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4"><span className="text-sm">{label}</span><input type="checkbox" checked={value.sections[key]} onChange={e => set("sections", { ...value.sections, [key]: e.target.checked })} className="size-4 accent-primary" /></label>)}</div></Card>
             <Card className="space-y-4 p-5"><h2 className="text-sm font-semibold">ข้อความท้ายเว็บ</h2><Field label="เกี่ยวกับเว็บ">{id => <Textarea id={id} rows={4} value={value.footerAbout} maxLength={300} onChange={e => set("footerAbout", e.target.value)} />}</Field><div className="flex flex-wrap gap-4 text-xs"><Link href="/admin/promo" className="text-primary hover:underline">ตั้งค่าแถบประกาศและโปรโมชัน ↗</Link><Link href="/admin/daily" className="text-primary hover:underline">ตั้งค่าเช็กอิน ↗</Link></div></Card>
+          </>}
+          {tab === "watermark" && <>
+            <Card className="space-y-4 p-5">
+              <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-semibold">ลายน้ำบนภาพสกิน</h2><p className="mt-1 text-xs text-muted-foreground">แสดงบนการ์ดสกินที่ผู้ใช้เลือกในตารางจัดสกินและบนป้ายตัวอย่าง — ไฟล์แบบไม่มีลายน้ำที่ชำระแล้วจะไม่มีลายน้ำนี้</p></div>
+                <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs"><input type="checkbox" checked={value.watermark.enabled} onChange={e => wm({ enabled: e.target.checked })} className="size-4 accent-primary" />เปิดใช้</label></div>
+              <WatermarkPreview config={value.watermark} name={value.name} />
+              <div className={cn("space-y-4", !value.watermark.enabled && "pointer-events-none opacity-50")}>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="รูปแบบลายน้ำ">{([["text", "ข้อความ", Type], ["image", "รูปภาพ / โลโก้", ImageUp]] as const).map(([mode, label, Icon]) => <button key={mode} type="button" role="radio" aria-checked={value.watermark.mode === mode} onClick={() => wm({ mode })} className={cn("flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-colors", value.watermark.mode === mode ? "border-primary bg-primary-soft text-primary" : "border-border hover:bg-surface-2")}><Icon className="size-4" aria-hidden />{label}</button>)}</div>
+                {value.watermark.mode === "text"
+                  ? <Field label="ข้อความลายน้ำ">{id => <Input id={id} value={value.watermark.text} maxLength={24} placeholder={`เว้นว่าง = ใช้ชื่อเว็บ (${value.name})`} onChange={e => wm({ text: e.target.value })} />}</Field>
+                  : <><ImageField label="รูปลายน้ำ" value={value.watermark.image} onChange={url => wm({ image: url })} uploadReady={uploadReady} disabled={pending} /><div className="flex flex-wrap gap-2 text-[11px]"><button type="button" onClick={() => wm({ image: value.logoDark })} className="rounded-lg border border-border px-2.5 py-1.5 hover:bg-surface-2">ใช้โลโก้โหมดมืด</button><button type="button" onClick={() => wm({ image: value.logoLight })} className="rounded-lg border border-border px-2.5 py-1.5 hover:bg-surface-2">ใช้โลโก้โหมดสว่าง</button></div><p className="text-[11px] text-muted-foreground">แนะนำ PNG พื้นใส สีขาวหรือสีอ่อน จะเห็นชัดบนภาพสกิน</p></>}
+                {([["opacity", "ความเข้ม", 5, 90], ["size", "ขนาด", 50, 200]] as const).map(([key, label, min, max]) => <Field key={key} label={`${label} ${value.watermark[key]}%`}>{id => <input id={id} type="range" min={min} max={max} step={5} value={value.watermark[key]} onChange={e => wm({ [key]: Number(e.target.value) })} className="w-full accent-primary" />}</Field>)}
+              </div>
+            </Card>
           </>}
         </fieldset>
       </div>

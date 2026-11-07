@@ -8,20 +8,24 @@ import { Slider } from "@/components/ui/slider";
 import { CoinIcon } from "@/components/shared/coin";
 import { copy } from "@/lib/copy";
 import { formatCoins } from "@/lib/format";
-import { MAX_SKINS, MIN_SKINS, PRICE_PER_SKIN, TEMPLATE_PRICES, calcTotal, discountPercent, type TemplateId } from "@/lib/pricing";
+import { MAX_SKINS, MIN_SKINS, PRICE_PER_SKIN, calcTotal, discountPercent, type TemplateId } from "@/lib/pricing";
+import { enabledTemplates, resolveTemplate } from "@/lib/templates";
+import { useTemplates } from "@/components/shared/templates-provider";
 import { cn, fmt } from "@/lib/utils";
 
 const p = copy.landing.pricing;
 const c = p.calc;
-const TEMPLATES: TemplateId[] = ["none", "a", "b"];
 
 /** เครื่องคิดราคาป้าย: เลื่อนจำนวนสกิน + เลือกเทมเพลต → ราคารวมจริงตาม lib/pricing */
 export function PriceCalculator() {
   const [skins, setSkins] = useState(24);
-  const [tpl, setTpl] = useState<TemplateId>("a");
+  const cfg = useTemplates();
+  const list = enabledTemplates(cfg);
+  const [picked, setTpl] = useState<TemplateId>("a");
+  const tpl = resolveTemplate(cfg, picked);
   const skinCost = Math.round(skins * PRICE_PER_SKIN * 100) / 100;
-  const tplCost = TEMPLATE_PRICES[tpl].price;
-  const total = calcTotal(skins, tpl);
+  const tplCost = cfg[tpl].price;
+  const total = calcTotal(skins, tpl, cfg);
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-soft sm:p-6">
@@ -60,10 +64,10 @@ export function PriceCalculator() {
       {/* เทมเพลต */}
       <div className="mt-5">
         <p className="text-sm font-medium">{c.template}</p>
-        <div role="radiogroup" aria-label={c.template} className="mt-2 grid grid-cols-3 gap-2">
-          {TEMPLATES.map((id) => {
-            const { price, compareAtPrice } = TEMPLATE_PRICES[id];
-            const off = discountPercent(price, compareAtPrice);
+        <div role="radiogroup" aria-label={c.template} className={cn("mt-2 grid gap-2", list.length === 1 ? "grid-cols-1" : list.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
+          {list.map((id) => {
+            const { price, compareAtPrice } = cfg[id];
+            const off = discountPercent(price, compareAtPrice ?? undefined);
             const on = tpl === id;
             return (
               <button

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CheckCircle2, Download, Loader2, LogIn, Wallet } from "lucide-react";
+import { CheckCircle2, Download, ImagePlus, Loader2, LogIn, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BRAND_NAME, copy } from "@/lib/copy";
@@ -37,6 +37,18 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
   const free = k.output === "watermark";
   const pathname = usePathname();
   const search = useSearchParams().toString();
+
+  // เทมเพลต B ต้องมีแบนเนอร์ของลูกค้าก่อน (server ตรวจซ้ำ)
+  if (k.template === "b" && !doc.decoration?.banner) {
+    return (
+      <Button asChild disabled={disabled} variant="outline" className="rounded-full px-5">
+        <Link href={`/generate/${game}?step=decorate`}>
+          <ImagePlus aria-hidden />
+          อัปโหลดแบนเนอร์ก่อน
+        </Link>
+      </Button>
+    );
+  }
 
   if (!k.loggedIn && !free) {
     const back = `${pathname}${search ? `?${search}` : ""}`;
@@ -86,6 +98,7 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
       setOpen(false);
       toast({ title: "สร้างป้ายสำเร็จ", description: k.loggedIn ? "ดาวน์โหลด PNG แล้ว ดาวน์โหลดซ้ำได้ที่หน้า \"ป้ายของฉัน\"" : "ดาวน์โหลด PNG แล้ว", variant: "success" });
     } catch (e) {
+      console.error("[poster-export]", e, e instanceof Event ? (e.target as HTMLImageElement | null)?.src?.slice(0, 120) : "");
       setError(e instanceof Error ? e.message : "ดาวน์โหลดไม่สำเร็จ กรุณาลองใหม่");
     } finally {
       locked.current = false;

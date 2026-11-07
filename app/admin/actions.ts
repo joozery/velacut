@@ -16,6 +16,8 @@ import type { PromoConfig } from "@/lib/promo";
 import type { TopupConfig } from "@/lib/topup";
 import type { Appearance } from "@/lib/appearance";
 import { saveAppearance } from "@/lib/server/appearance";
+import { saveTemplates } from "@/lib/server/templates";
+import type { TemplatesConfig } from "@/lib/templates";
 
 async function run(fn: () => Promise<void>, ...paths: string[]): Promise<ActionResult<null>> {
   try {
@@ -124,4 +126,13 @@ export async function testSlip2GoAction(apiUrl: string, secret: string): Promise
     console.error(e);
     return { ok: false, error: "ทดสอบไม่สำเร็จ" };
   }
+}
+
+export async function saveTemplatesAction(input: unknown): Promise<ActionResult<TemplatesConfig>> {
+  let saved: TemplatesConfig | null = null;
+  const r = await run(async () => { const a = await requireAdmin(); saved = await saveTemplates(input, a.email); }, "/admin/templates");
+  if (!r.ok) return r;
+  // ชื่อ/ราคาแบบป้ายใช้ทั้งหน้าแรก (เครื่องคิดราคา) และ editor
+  revalidatePath("/", "layout");
+  return { ok: true, data: saved! };
 }

@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { getDb } from "@/lib/db/mongo";
-import { DEFAULT_APPEARANCE, HOME_SECTIONS, type Appearance } from "@/lib/appearance";
+import { DEFAULT_APPEARANCE, DEFAULT_WATERMARK, HOME_SECTIONS, type Appearance } from "@/lib/appearance";
 import { isUploadedUrl } from "./media";
 import { UserError } from "./poster";
 
@@ -20,6 +20,14 @@ export function parseAppearance(raw: unknown): Appearance {
   // ค่าที่บันทึกก่อนมีช่องใหม่ → เติมด้วยค่าเริ่มต้น (ไม่ทำให้ค่าเดิมหาย)
   const hero: Record<string, unknown> = { wordmarkImage: DEFAULT_APPEARANCE.hero.wordmarkImage, wordmarkAnimate: DEFAULT_APPEARANCE.hero.wordmarkAnimate, ...((r.hero ?? {}) as Record<string, unknown>) };
   const sections = (r.sections ?? {}) as Record<string, unknown>;
+  const wm: Record<string, unknown> = { ...DEFAULT_WATERMARK, ...((r.watermark ?? {}) as Record<string, unknown>) };
+  const pct = (v: unknown, label: string, min: number, max: number) => {
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < min || n > max) throw new UserError(`${label}ต้องอยู่ระหว่าง ${min}–${max}%`);
+    return n;
+  };
+  const wmText = typeof wm.text === "string" ? wm.text.trim() : "";
+  if (wmText.length > 24) throw new UserError("ข้อความลายน้ำยาวเกิน 24 ตัวอักษร");
   const color = (v: unknown) => {
     if (typeof v !== "string" || !/^#[0-9a-f]{6}$/i.test(v)) throw new UserError("สีต้องอยู่ในรูปแบบ #RRGGBB");
     return v.toLowerCase();
@@ -35,6 +43,7 @@ export function parseAppearance(raw: unknown): Appearance {
       if (typeof sections[key] !== "boolean") throw new UserError("ข้อมูลส่วนแสดงหน้าแรกไม่ถูกต้อง");
       return [key, sections[key]];
     })) as Appearance["sections"],
+    watermark: { enabled: wm.enabled !== false, mode: wm.mode === "image" ? "image" : "text", text: wmText, image: image(wm.image, "รูปลายน้ำ"), opacity: pct(wm.opacity, "ความเข้มลายน้ำ", 5, 90), size: pct(wm.size, "ขนาดลายน้ำ", 50, 200) },
   };
 }
 export async function getAppearance() {

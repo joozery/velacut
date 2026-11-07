@@ -19,7 +19,21 @@ export type Appearance = {
     kicker: string; title: string; highlight: string; description: string; ctaLabel: string; ctaHref: string };
   footerAbout: string;
   sections: Record<HomeSection, boolean>;
+  /** ลายน้ำบนภาพสกินที่ผู้ใช้เลือก (ตารางจัดสกิน + ป้ายตัวอย่าง) — ไฟล์ที่ชำระแล้วไม่มีลายน้ำนี้ */
+  watermark: SkinWatermark;
 };
+export type SkinWatermark = {
+  enabled: boolean;
+  mode: "text" | "image";
+  /** ว่าง = ใช้ชื่อเว็บ */
+  text: string;
+  image: string;
+  /** ความเข้ม 5–90 (%) */
+  opacity: number;
+  /** ขนาด 50–200 (%) */
+  size: number;
+};
+export const DEFAULT_WATERMARK: SkinWatermark = { enabled: true, mode: "text", text: "", image: "/logo/logo-dark.png", opacity: 35, size: 100 };
 export const DEFAULT_APPEARANCE: Appearance = {
   name: copy.brand.name, description: copy.brand.metaDescription,
   logoLight: "/logo/logo-light.png", logoDark: "/logo/logo-dark.png",
@@ -30,6 +44,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
     ctaLabel: copy.landing.hero.ctaPrimary, ctaHref: "/generate/mlbb" },
   footerAbout: copy.footer.about,
   sections: { stats: true, showcase: true, features: true, steps: true, pricing: true, faq: true, finalCta: true },
+  watermark: DEFAULT_WATERMARK,
 };
 
 /** Choose readable button text for light and dark brand colors. */

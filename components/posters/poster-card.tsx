@@ -6,18 +6,19 @@ import { Button } from "@/components/ui/button";
 import { PosterPreview } from "@/components/editor/poster-preview";
 import { OrderDownload } from "@/components/editor/order-download";
 import type { PosterOrder } from "@/lib/account";
-import { copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
 import { DEFAULT_DECORATION, useEditorStore } from "@/stores/editor-store";
 import { toast } from "@/stores/toast-store";
 import { cn } from "@/lib/utils";
+import { useTemplates } from "@/components/shared/templates-provider";
 
 const dt = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" });
 
 export function PosterCard({ order }: { order: PosterOrder }) {
   const router = useRouter();
+  const templates = useTemplates();
   const watermark = order.doc.output === "watermark";
-  const templateName = copy.editor.template.options[order.doc.template]?.name ?? order.doc.template;
+  const templateName = templates[order.doc.template]?.name ?? order.doc.template;
   const edit = () => {
     useEditorStore.getState().loadDoc(order.game, order.doc, order.cols);
     toast({ title: "โหลดป้ายเข้า editor แล้ว", description: "แก้ไขแล้วดาวน์โหลดใหม่ได้เลย", variant: "success" });
