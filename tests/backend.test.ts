@@ -717,3 +717,23 @@ test("library: rejects untrusted images, invalid tiers and missing heroes", asyn
   await assert.rejects(saveLibraryItem("skin", { ...input, id: "../private" }, A), /รหัส/);
   await assert.rejects(saveLibraryItem("hero", { id: "custom-empty", name: "New Hero", active: true }, A), /อัปโหลด/);
 });
+
+test("payments: copied endpoint URLs are normalized before testing and verifying", async () => {
+  const { normalizeSlip2GoApiUrl } = await import("../lib/payments");
+  const pay = await import("../lib/server/payments");
+  assert.equal(normalizeSlip2GoApiUrl(" https://api.slip.test/api/verify-slip/qr-code/info/ "), "https://api.slip.test");
+  assert.equal(normalizeSlip2GoApiUrl("https://api.slip.test/api/verify-slip/qr-code/info/api/account/info"), "https://api.slip.test");
+  assert.equal(normalizeSlip2GoApiUrl("https://api.slip.test/tenant/api/verify-slip/qr-image/info"), "https://api.slip.test/tenant");
+  await pay.savePaymentSettings({ slip2go: { enabled: true, apiUrl: "https://api.slip.test/api/verify-slip/qr-code/info" }, slipSecret: "super-secret-abcd" }, A);
+  assert.equal((await pay.getPaymentSettingsView()).slip2go.apiUrl, "https://api.slip.test");
+  await withFetch((url) => {
+    assert.equal(url, "https://api.slip.test/api/account/info");
+    return { code: "200000", message: "OK" };
+  }, async () => { assert.equal((await pay.testSlip2Go("https://api.slip.test/api/verify-slip/qr-code/info")).ok, true); });
+  // Previously saved full endpoints are fixed when read, without rotating the secret.
+  await (await m.mongo.getDb()).collection<{ _id: string; value: unknown }>("settings").updateOne({ _id: "payments" }, { $set: { "value.slip2go.apiUrl": "https://api.slip.test/api/verify-slip/qr-code/info" } });
+  await withFetch((url) => {
+    assert.equal(url, "https://api.slip.test/api/verify-slip/qr-image/info");
+    return { code: "200200", data: { transRef: "NORMALIZED", amount: 100.25 } };
+  }, async () => { assert.equal((await pay.verifySlipImage(new File(["test"], "slip.png", { type: "image/png" }), 100.25)).amount, 100.25); });
+});

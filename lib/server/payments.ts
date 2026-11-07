@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db/mongo";
 import type { PaymentMethodsPublic, PaymentSettingsView, SlipReceiver } from "@/lib/payments";
+import { normalizeSlip2GoApiUrl } from "@/lib/payments";
 import { UserError } from "./poster";
 import { decryptSecret, encryptSecret } from "./secrets";
 import { isPromptPayId, normalizePromptPayId, promptPayPayload } from "@/lib/promptpay";
@@ -23,7 +24,9 @@ const col = async () => (await getDb()).collection<Doc>("settings");
 
 async function load(): Promise<Stored> {
   const doc = await (await col()).findOne({ _id: "payments" });
-  return { promptpay: { ...DEFAULTS.promptpay, ...doc?.value.promptpay }, slip2go: { ...DEFAULTS.slip2go, ...doc?.value.slip2go }, truemoney: { ...DEFAULTS.truemoney, ...doc?.value.truemoney }, truemoneyWallet: { ...DEFAULTS.truemoneyWallet, ...doc?.value.truemoneyWallet } };
+  const value = { promptpay: { ...DEFAULTS.promptpay, ...doc?.value.promptpay }, slip2go: { ...DEFAULTS.slip2go, ...doc?.value.slip2go }, truemoney: { ...DEFAULTS.truemoney, ...doc?.value.truemoney }, truemoneyWallet: { ...DEFAULTS.truemoneyWallet, ...doc?.value.truemoneyWallet } };
+  value.slip2go.apiUrl = normalizeSlip2GoApiUrl(value.slip2go.apiUrl);
+  return value;
 }
 
 const slipReady = (s: Stored) => s.slip2go.enabled && !!s.slip2go.apiUrl && !!s.slip2go.secretEnc;
@@ -62,7 +65,7 @@ export async function getPaymentSettingsView(): Promise<PaymentSettingsView & { 
 const str = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 
 function parseApiUrl(v: unknown) {
-  const s = str(v, 200).replace(/\/+$/, "");
+  const s = normalizeSlip2GoApiUrl(str(v, 200));
   if (!s) return "";
   let u: URL;
   try { u = new URL(s); } catch { throw new UserError("API URL ของ Slip2Go ไม่ถูกต้อง"); }

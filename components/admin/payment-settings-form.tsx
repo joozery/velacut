@@ -5,7 +5,7 @@ import Image from "next/image";
 import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Plug, Plus, Save, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { SLIP_ACCOUNT_TYPES, type PaymentSettingsView, type SlipReceiver } from "@/lib/payments";
+import { SLIP_ACCOUNT_TYPES, normalizeSlip2GoApiUrl, type PaymentSettingsView, type SlipReceiver } from "@/lib/payments";
 import { toast } from "@/stores/toast-store";
 import { savePaymentSettingsAction, testSlip2GoAction } from "@/app/admin/actions";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,7 @@ export function PaymentSettingsForm({ initial }: { initial: PaymentSettingsView 
       setError(r?.error ?? "บันทึกไม่สำเร็จ");
       return;
     }
-    const next = { ...v, slip2go: { ...v.slip2go, hasSecret: secret === undefined ? v.slip2go.hasSecret : !!secret.trim(), secretHint: secret === undefined ? v.slip2go.secretHint : secret.trim() ? `••••${secret.trim().slice(-4)}` : null } };
+    const next = { ...v, slip2go: { ...v.slip2go, apiUrl: normalizeSlip2GoApiUrl(v.slip2go.apiUrl), hasSecret: secret === undefined ? v.slip2go.hasSecret : !!secret.trim(), secretHint: secret === undefined ? v.slip2go.secretHint : secret.trim() ? `••••${secret.trim().slice(-4)}` : null } };
     setSaved(next); setV(next); setSecret(undefined); setShowSecret(false);
     toast({ title: "บันทึกการตั้งค่าแล้ว", variant: "success" });
   });
@@ -80,7 +80,7 @@ export function PaymentSettingsForm({ initial }: { initial: PaymentSettingsView 
           <Switch checked={s.enabled} onChange={(e) => setSlip({ enabled: e })} label="เปิดใช้ Slip2Go" />
         </div>
 
-        <div className="grid gap-1.5"><Label htmlFor={`${id}-url`} className="text-xs">API URL</Label><Input id={`${id}-url`} value={s.apiUrl} onChange={(e) => setSlip({ apiUrl: e.target.value })} placeholder="https://… (ดูได้ในหน้า API Connect ของ Slip2Go)" spellCheck={false} autoComplete="off" /></div>
+        <div className="grid gap-1.5"><Label htmlFor={`${id}-url`} className="text-xs">API URL</Label><Input id={`${id}-url`} value={s.apiUrl} onChange={(e) => setSlip({ apiUrl: e.target.value })} onBlur={() => setSlip({ apiUrl: normalizeSlip2GoApiUrl(s.apiUrl) })} placeholder="https://… (ดูได้ในหน้า API Connect ของ Slip2Go)" spellCheck={false} autoComplete="off" /><p className="text-[11px] text-muted-foreground">ใส่ URL หลักจาก Slip2Go ระบบจะต่อเส้นทาง API ให้เอง หากวาง URL เต็มจะตัด endpoint ออกอัตโนมัติ</p></div>
 
         <div className="grid gap-1.5">
           <Label htmlFor={`${id}-sec`} className="text-xs">Secret Key</Label>

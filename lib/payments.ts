@@ -23,3 +23,11 @@ export const SLIP_ACCOUNT_TYPES: [string, string][] = [
 const GIFT_RE = /^https:\/\/gift\.truemoney\.com\/campaign\/?\?v=([A-Za-z0-9]{10,64})$/;
 /** ดึงรหัสซองจากลิงก์ซองของขวัญ TrueMoney */
 export const parseGiftLink = (link: string) => GIFT_RE.exec(link.trim())?.[1] ?? null;
+
+/** The form accepts a base URL or a copied Slip2Go endpoint. */
+export function normalizeSlip2GoApiUrl(value: string) {
+  let url = value.trim().replace(/\/+$/, "");
+  const endpoint = /\/api\/(?:account\/info|verify-slip\/[^/?#]+\/info)$/i;
+  while (endpoint.test(url)) url = url.replace(endpoint, "").replace(/\/+$/, "");
+  return url;
+}
