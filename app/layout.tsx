@@ -16,7 +16,11 @@ const font = Noto_Sans_Thai({
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getAppearanceSafe();
-  return { title: { default: `${site.name} — ${copy.brand.tagline}`, template: `%s · ${site.name}` }, description: site.description };
+  return {
+    title: { default: `${site.name} — ${copy.brand.tagline}`, template: `%s · ${site.name}` },
+    description: site.description,
+    icons: { icon: "/favicon.ico?v=iconbrow-1", shortcut: "/favicon.ico?v=iconbrow-1" },
+  };
 }
 
 export const viewport: Viewport = {
