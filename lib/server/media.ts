@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { UserError } from "./poster";
 import { publicBaseUrl, putPublicObject } from "./storage";
 
@@ -13,6 +12,8 @@ const FOLDERS: UploadFolder[] = ["promo", "appearance"];
 export async function processImage(file: File) {
   if (file.size > MAX_UPLOAD_BYTES) throw new UserError("ไฟล์ใหญ่เกิน 8 MB");
   if (!/^image\/(png|jpe?g|webp|gif|avif)$/.test(file.type)) throw new UserError("รองรับเฉพาะ PNG, JPG, WEBP, GIF หรือ AVIF");
+  // Settings validation is also imported by page rendering; load native code only for uploads.
+  const { default: sharp } = await import("sharp");
   try {
     const { data, info } = await sharp(Buffer.from(await file.arrayBuffer()), { limitInputPixels: 40_000_000 })
       .rotate()
