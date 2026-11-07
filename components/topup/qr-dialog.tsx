@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import QRCode from "qrcode";
-import { CheckCircle2, Copy, ImageUp, Loader2, RefreshCw } from "lucide-react";
+import { Copy, ImageUp, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { copy } from "@/lib/copy";
@@ -97,13 +97,14 @@ function RealQr({ payload }: { payload: string }) {
 }
 
 /** อัปโหลดสลิปเพื่อตรวจอัตโนมัติ (Slip2Go) */
-function SlipUpload({ ticketId, onPaid }: { ticketId: string; onPaid: () => void }) {
+function SlipUpload({ ticketId, onPaid, enabled }: { ticketId: string; onPaid: () => void; enabled: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
   const upload = async (file: File) => {
+    if (busy || !enabled) return;
     setError("");
     setPreview(URL.createObjectURL(file));
     setBusy(true);
@@ -125,19 +126,22 @@ function SlipUpload({ ticketId, onPaid }: { ticketId: string; onPaid: () => void
     }
   };
   return (
-    <div className="rounded-2xl border border-dashed border-primary/40 bg-primary-soft/30 p-3">
-      <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label="เลือกรูปสลิป" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
-      <div className="flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {preview ? <img src={preview} alt="สลิปที่เลือก" className="h-14 w-10 shrink-0 rounded-md border border-border object-cover" /> : <span className="grid h-14 w-10 shrink-0 place-items-center rounded-md bg-surface text-primary"><ImageUp className="size-5" aria-hidden /></span>}
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold">โอนแล้ว? อัปโหลดสลิป</p>
-          <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">ระบบตรวจสลิปและเติมเครดิตให้อัตโนมัติ</p>
-        </div>
-        <Button size="sm" className="shrink-0 rounded-lg" disabled={busy} onClick={() => ref.current?.click()}>{busy ? <Loader2 className="animate-spin" aria-hidden /> : <CheckCircle2 aria-hidden />}{busy ? "กำลังตรวจ…" : "เลือกสลิป"}</Button>
+    <section className="flex h-full flex-col rounded-2xl border-2 border-primary/30 bg-primary-soft/40 p-4 sm:p-5" aria-label="อัปโหลดสลิปการโอน">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">2</span>
+        <div><h3 className="text-base font-bold">โอนแล้ว? อัปโหลดสลิปที่นี่</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">ส่งรูปสลิปเพื่อตรวจสอบและรับเครดิต</p></div>
       </div>
-      {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
-    </div>
+      <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy || !enabled} className="sr-only" aria-label="เลือกรูปสลิป" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
+      <button type="button" disabled={busy || !enabled} onClick={() => ref.current?.click()} aria-label="เลือกรูปสลิปเพื่ออัปโหลด" className="group flex min-h-40 flex-1 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-primary/35 bg-surface/80 p-5 text-center transition-colors hover:border-primary hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-52">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {preview ? <img src={preview} alt="สลิปที่เลือก" className="max-h-44 max-w-full rounded-lg border border-border object-contain" /> : <span className="grid size-16 place-items-center rounded-2xl bg-primary-soft text-primary"><ImageUp className="size-8" aria-hidden /></span>}
+        <span className="text-sm font-semibold text-primary">{busy ? "กำลังตรวจสอบสลิป…" : preview ? "เลือกรูปสลิปใหม่" : "แตะเพื่อเลือกรูปสลิป"}</span>
+        <span className="text-[11px] text-muted-foreground">JPG, PNG หรือ WEBP · ไม่เกิน 8 MB</span>
+      </button>
+      <Button size="lg" block className="mt-4 rounded-xl text-sm" disabled={busy || !enabled} onClick={() => ref.current?.click()}>{busy ? <Loader2 className="animate-spin" aria-hidden /> : <ImageUp aria-hidden />}{busy ? "กำลังตรวจสลิป…" : preview ? "อัปโหลดสลิปใหม่" : "อัปโหลดสลิปการโอน"}</Button>
+      <p role="status" className="mt-3 flex items-start justify-center gap-1.5 text-center text-[11px] leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden />{enabled ? "เมื่อเลือกรูป ระบบจะส่งตรวจและเติมเครดิตเมื่อสลิปผ่าน" : "รายการนี้ยังไม่พร้อมรับสลิป กรุณาติดต่อผู้ดูแล"}</p>
+      {error && <p role="alert" className="mt-3 rounded-xl bg-danger-soft p-3 text-xs leading-5 text-danger">{error}</p>}
+    </section>
   );
 }
 
@@ -161,45 +165,50 @@ export function QrDialog({ ticket, onClose, onRenew, slipEnabled }: { ticket: To
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader className="items-center pr-0 text-center">
+      <DialogContent className="max-w-md sm:max-w-[760px]">
+        <DialogHeader className="items-start pr-10 text-left">
           {isWallet ? <Image src="/images/payments/truemoney.webp" alt="TrueMoney Wallet" width={220} height={43} className="mb-1 h-7 w-auto" /> : <Image src="/images/payments/thai-qr.webp" alt="Thai QR Payment" width={791} height={240} className="mb-1 h-9 w-auto rounded-md" />}
           <DialogTitle>{isWallet ? t.walletTransfer.title : t.qrTitle}</DialogTitle>
           <DialogDescription>{isWallet ? t.walletTransfer.description : t.qrDesc}</DialogDescription>
         </DialogHeader>
 
-        {isWallet ? <div className="rounded-2xl border border-orange-300/40 bg-orange-50 p-4 text-center dark:bg-orange-400/10"><p className="text-xs text-muted-foreground">{t.walletTransfer.receiver}</p><p className="mt-2 text-2xl font-bold tabular-nums">{ticket?.walletMobile}</p><Button size="sm" variant="outline" className="mt-3" onClick={async () => { try { await navigator.clipboard.writeText(ticket?.walletMobile ?? ""); toast({ title: t.walletTransfer.copied, variant: "success" }); } catch {} }}><Copy aria-hidden />{t.walletTransfer.copy}</Button>{expired && <Button size="sm" className="mt-3 ml-2" onClick={onRenew}><RefreshCw aria-hidden />{t.qrRenew}</Button>}</div> : <div className="relative mx-auto w-56">
-          <div className={cn("aspect-square rounded-2xl border border-border bg-white p-3 shadow-soft", expired && "opacity-20 blur-[2px]")}>
-            {ticket?.qrPayload ? <RealQr payload={ticket.qrPayload} /> : <SampleQr seed={amount.toFixed(2)} />}
-          </div>
-          {/* ป้ายกันสับสน: ยังไม่ตั้งพร้อมเพย์ร้าน → QR ตัวอย่างห้ามสแกนจ่าย */}
-          {!ticket?.qrPayload && (
-            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 rotate-[-8deg] bg-danger/90 py-1 text-center text-[11px] font-bold text-white shadow">
-              {t.qrSample}
-            </span>
-          )}
-          {expired && (
-            <Button size="sm" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full" onClick={onRenew}>
-              <RefreshCw aria-hidden />
-              {t.qrRenew}
-            </Button>
-          )}
-        </div>}
+        <div className="grid items-stretch gap-4 sm:grid-cols-2">
+          <section className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-2/35 p-4" aria-label="ข้อมูลการชำระเงิน">
+            <div className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface text-sm font-bold text-primary ring-1 ring-border">1</span><h3 className="text-sm font-semibold">{isWallet ? "โอนเข้าเบอร์ Wallet" : "สแกน QR แล้วโอนเงิน"}</h3></div>
+            {isWallet ? <div className="rounded-2xl border border-orange-300/40 bg-orange-50 p-4 text-center dark:bg-orange-400/10"><p className="text-xs text-muted-foreground">{t.walletTransfer.receiver}</p><p className="mt-2 text-2xl font-bold tabular-nums">{ticket?.walletMobile}</p><Button size="sm" variant="outline" className="mt-3" onClick={async () => { try { await navigator.clipboard.writeText(ticket?.walletMobile ?? ""); toast({ title: t.walletTransfer.copied, variant: "success" }); } catch {} }}><Copy aria-hidden />{t.walletTransfer.copy}</Button>{expired && <Button size="sm" className="mt-3 ml-2" onClick={onRenew}><RefreshCw aria-hidden />{t.qrRenew}</Button>}</div> : <div className="relative mx-auto w-48 sm:w-52">
+              <div className={cn("aspect-square rounded-2xl border border-border bg-white p-3 shadow-soft", expired && "opacity-20 blur-[2px]")}>
+                {ticket?.qrPayload ? <RealQr payload={ticket.qrPayload} /> : <SampleQr seed={amount.toFixed(2)} />}
+              </div>
+              {/* ป้ายกันสับสน: ยังไม่ตั้งพร้อมเพย์ร้าน → QR ตัวอย่างห้ามสแกนจ่าย */}
+              {!ticket?.qrPayload && (
+                <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 rotate-[-8deg] bg-danger/90 py-1 text-center text-[11px] font-bold text-white shadow">
+                  {t.qrSample}
+                </span>
+              )}
+              {expired && (
+                <Button size="sm" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full" onClick={onRenew}>
+                  <RefreshCw aria-hidden />
+                  {t.qrRenew}
+                </Button>
+              )}
+            </div>}
 
-        {ticket?.payeeName && <p className="-mt-2 text-center text-xs text-muted-foreground">ชื่อบัญชี: <span className="font-semibold text-foreground">{ticket.payeeName}</span></p>}
-        <div className="rounded-2xl bg-surface-2 p-4 text-center">
-          <p className="text-xs text-muted-foreground">{t.qrAmount}</p>
-          <p className="mt-0.5 text-3xl font-bold tabular-nums">฿{formatBaht(amount)}</p>
-          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-            = {coins.toLocaleString("th-TH")} {t.coins}
-          </p>
-          <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={copyAmount}>
-            <Copy aria-hidden />
-            {t.qrCopy}
-          </Button>
+            {ticket?.payeeName && <p className="text-center text-xs text-muted-foreground">ชื่อบัญชี: <span className="font-semibold text-foreground">{ticket.payeeName}</span></p>}
+            <div className="rounded-2xl bg-surface-2 p-4 text-center">
+              <p className="text-xs text-muted-foreground">{t.qrAmount}</p>
+              <p className="mt-0.5 text-3xl font-bold tabular-nums">฿{formatBaht(amount)}</p>
+              <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                = {coins.toLocaleString("th-TH")} {t.coins}
+              </p>
+              <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={copyAmount}>
+                <Copy aria-hidden />
+                {t.qrCopy}
+              </Button>
+            </div>
+
+          </section>
+          {ticket && <SlipUpload key={ticket.id} ticketId={ticket.id} onPaid={onClose} enabled={slipEnabled && Boolean(ticket.qrPayload || isWallet)} />}
         </div>
-
-        {slipEnabled && ticket && (ticket.qrPayload || isWallet) && <SlipUpload ticketId={ticket.id} onPaid={onClose} />}
 
         <div className="flex items-center justify-between text-xs" aria-live="polite">
           <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -210,7 +219,7 @@ export function QrDialog({ ticket, onClose, onRenew, slipEnabled }: { ticket: To
             {expired ? t.qrExpired : fmt(t.qrExpires, { time: `${mm}:${ss}` })}
           </span>
         </div>
-        <p className="text-center text-[11px] text-muted-foreground">{slipEnabled ? "โอนให้ตรงยอดทุกหลักรวมเศษสตางค์ แล้วอัปโหลดสลิปด้านบน" : t.qrNote}</p>
+        <p className="text-center text-[11px] text-muted-foreground">{slipEnabled ? "โอนให้ตรงยอดทุกหลักรวมเศษสตางค์ แล้วส่งรูปในช่องอัปโหลดสลิป" : t.qrNote}</p>
       </DialogContent>
     </Dialog>
   );
