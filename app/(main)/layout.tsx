@@ -3,18 +3,21 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { FloatingActions } from "@/components/layout/floating-actions";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { getDailyConfigSafe, getPromoSafe } from "@/lib/server/settings";
+import { promoActive } from "@/lib/promo";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const [promo, daily] = await Promise.all([getPromoSafe(), getDailyConfigSafe()]);
   return (
     <>
-      <AnnouncementBar />
+      <AnnouncementBar promo={promo} active={promoActive(promo)} />
       {/* กรอบกลางจอ: เส้นซ้าย-ขวาวิ่งตลอดทั้งหน้า */}
       <div className="frame relative min-h-dvh pb-[calc(68px+env(safe-area-inset-bottom))] md:pb-0">
         <SiteHeader />
         <main id="main">{children}</main>
         <SiteFooter />
       </div>
-      <FloatingActions />
+      <FloatingActions daily={daily} />
       <MobileBottomNav />
     </>
   );

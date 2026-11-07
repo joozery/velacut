@@ -9,7 +9,7 @@ const bahtFormatter = new Intl.NumberFormat("th-TH", {
 });
 
 export const formatCoins = (n: number) => coinFormatter.format(n);
-/** ยอดเงิน/คอยน์แบบทศนิยม 2 ตำแหน่งเสมอ เช่น 0.00, 2.10 */
+/** ยอดเงิน/เครดิตแบบทศนิยม 2 ตำแหน่งเสมอ เช่น 0.00, 2.10 */
 export const formatCoinsFixed = (n: number) => bahtFormatter.format(n);
 export const formatInt = (n: number) => intFormatter.format(n);
 export const formatBaht = (n: number) => bahtFormatter.format(n);

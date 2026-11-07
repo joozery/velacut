@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, Eye, Minus, Plus, Redo2, ImagePlus, LayoutTemplate, Palette, Type, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { getCatalog } from "@/lib/catalog";
@@ -16,6 +17,8 @@ import { useGrid } from "./use-grid";
 import { useRequireSkins } from "./use-step-guard";
 
 type Tool = "text" | "template" | "cover" | "color";
+/** Radix Select ใช้ค่าว่างไม่ได้ — ใช้ค่านี้แทน "เลือกหน้าปกอัตโนมัติ" */
+const AUTO_COVER = "__auto__";
 const tools = [{ id: "text", label: "ข้อความ", icon: Type }, { id: "template", label: "แบบป้าย", icon: LayoutTemplate }, { id: "cover", label: "หน้าปก", icon: ImagePlus }, { id: "color", label: "สี", icon: Palette }] as const;
 
 const fields = [
@@ -47,9 +50,10 @@ export function DecorateStep({ game }: { game: GameSlug }) {
         <div className="grid gap-4 pt-4">
           {(!tool || tool === "template" || doc.template === "none") && <div className="grid gap-2">
             <Label htmlFor={`${prefix}-decorate-template`}>แบบป้าย</Label>
-            <select id={`${prefix}-decorate-template`} value={doc.template} onChange={(e) => setTemplate(game, e.target.value as typeof doc.template)} className="h-12 rounded-2xl border border-input bg-surface px-3 text-base sm:text-sm">
-              <option value="none">ตารางสกินอย่างเดียว</option><option value="a">เทมเพลต A</option><option value="b">เทมเพลต B</option>
-            </select>
+            <Select value={doc.template} onValueChange={(v) => setTemplate(game, v as typeof doc.template)}>
+              <SelectTrigger id={`${prefix}-decorate-template`} className="h-12 w-full"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="none">ตารางสกินอย่างเดียว</SelectItem><SelectItem value="a">เทมเพลต A</SelectItem><SelectItem value="b">เทมเพลต B</SelectItem></SelectContent>
+            </Select>
           </div>}
           {doc.template === "none" ? <p className="rounded-2xl bg-primary-soft p-4 text-sm text-primary-soft-foreground">แบบนี้แสดงเฉพาะตารางสกิน เลือกเทมเพลต A หรือ B เพื่อเพิ่มข้อมูลไอดีและภาพหน้าปก</p> : <>
             {(!tool || tool === "text") && <><div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-code`}>ชื่อป้าย / รหัสไอดี</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-code`} value={decoration.code} maxLength={40} placeholder="เช่น ไอดี MLBB 001" onChange={(e) => patch({ code: e.target.value })} /></div>
@@ -61,7 +65,7 @@ export function DecorateStep({ game }: { game: GameSlug }) {
             </div>
             <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div>
             <RankPicker id={`${prefix}-decorate-rank`} value={decoration.rank} onChange={(rank) => patch({ rank })} /></>}
-            {(!tool || tool === "cover") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><select id={`${prefix}-decorate-cover`} value={decoration.coverId} onChange={(e) => patch({ coverId: e.target.value })} className="h-12 w-full rounded-2xl border border-input bg-surface px-3 text-base sm:text-sm"><option value="">เลือกจากสกินระดับสูงสุดอัตโนมัติ</option>{skins.map((id) => <option key={id} value={id}>{getCatalog(game).skinById.get(id)?.name ?? id}</option>)}</select>
+            {(!tool || tool === "cover") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><Select value={decoration.coverId || AUTO_COVER} onValueChange={(v) => patch({ coverId: v === AUTO_COVER ? "" : v })}><SelectTrigger id={`${prefix}-decorate-cover`} className="h-12 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={AUTO_COVER}>เลือกจากสกินระดับสูงสุดอัตโนมัติ</SelectItem>{skins.map((id) => <SelectItem key={id} value={id}>{getCatalog(game).skinById.get(id)?.name ?? id}</SelectItem>)}</SelectContent></Select>
               {tool === "cover" && <div className="mt-2 grid grid-cols-3 gap-3">{skins.map((id) => { const skin = getCatalog(game).skinById.get(id); return skin ? <button key={id} type="button" aria-label={`ใช้ ${skin.name} เป็นหน้าปก`} aria-pressed={decoration.coverId === id} onClick={() => patch({ coverId: id })} className={`relative overflow-hidden rounded-2xl border-2 ${decoration.coverId === id ? "border-primary ring-2 ring-primary/20" : "border-transparent"}`}><Image src={skin.image} alt={skin.name} width={120} height={160} className="aspect-[3/4] w-full object-cover" /><span className="absolute inset-x-0 bottom-0 bg-black/65 p-1 text-[10px] text-white">{skin.name}</span></button> : null; })}</div>}
             </div>}
             {(!tool || tool === "color") && <><div className="flex items-center justify-between gap-3"><Label htmlFor={`${prefix}-decorate-accent`}>สีข้อความไฮไลต์</Label><input id={`${prefix}-decorate-accent`} type="color" value={decoration.accent} onChange={(e) => patch({ accent: e.target.value })} className="h-10 w-16 cursor-pointer rounded-lg border border-input bg-surface p-1" /></div>

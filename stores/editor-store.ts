@@ -35,7 +35,7 @@ export type EditorDoc = {
   /** แบบป้าย (step template) */
   template: TemplateId;
   decoration?: Decoration;
-  /** รูปแบบไฟล์ที่จะดาวน์โหลด (step checkout) — clean = ไม่มีลายน้ำ (ตัดคอยน์), watermark = ฟรีแบบมีลายน้ำ */
+  /** รูปแบบไฟล์ที่จะดาวน์โหลด (step checkout) — clean = ไม่มีลายน้ำ (ตัดเครดิต), watermark = ฟรีแบบมีลายน้ำ */
   output?: OutputMode;
 };
 
@@ -75,6 +75,8 @@ type EditorStore = {
   setDecoration: (game: GameSlug, patch: Partial<Decoration>) => void;
   setOutput: (game: GameSlug, output: OutputMode) => void;
   setViewCols: (game: GameSlug, cols: number) => void;
+  /** โหลดป้ายที่เคยสร้างกลับมาแก้ไข (undo ได้) */
+  loadDoc: (game: GameSlug, doc: EditorDoc, viewCols: number) => void;
   undo: (game: GameSlug) => void;
   redo: (game: GameSlug) => void;
 };
@@ -163,6 +165,14 @@ export const useEditorStore = create<EditorStore>()(
         setTemplate: (game, template) => commit(game, (d) => ({ ...d, template })),
         setOutput: (game, output) => commit(game, (d) => ({ ...d, output })),
         setDecoration: (game, patch) => commit(game, (d) => ({ ...d, decoration: { ...DEFAULT_DECORATION, ...d.decoration, ...patch } })),
+
+        loadDoc: (game, doc, viewCols) => {
+          const catalog = getCatalog(game);
+          const skins = dedupe(doc.skins).filter((id) => catalog.skinById.has(id)).slice(0, MAX_SKINS);
+          commit(game, () => ({ ...EMPTY_DOC, ...structuredClone(doc), skins }));
+          const g = getGame(game);
+          set((s) => ({ games: { ...s.games, [game]: { ...g, viewCols: Math.min(VIEW_COLS_MAX, Math.max(VIEW_COLS_MIN, viewCols)) } } }));
+        },
 
         setViewCols: (game, cols) =>
           set((s) => ({

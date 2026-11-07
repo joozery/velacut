@@ -5,12 +5,12 @@ import { createPortal } from "react-dom";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { renderPoster, savePoster } from "@/lib/poster-download";
-import type { PosterOrder } from "@/stores/checkout-store";
+import type { PosterOrder } from "@/lib/account";
 import { toast } from "@/stores/toast-store";
 import { PosterPreview } from "./poster-preview";
 import { DEFAULT_DECORATION } from "@/stores/editor-store";
 
-export function OrderDownload({ order }: { order: PosterOrder }) {
+export function OrderDownload({ order, label = "ดาวน์โหลดซ้ำฟรี" }: { order: PosterOrder; label?: string }) {
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -28,5 +28,5 @@ export function OrderDownload({ order }: { order: PosterOrder }) {
       toast({ title: "ดาวน์โหลดไม่สำเร็จ", description: e instanceof Error ? e.message : "กรุณาลองใหม่", variant: "error" });
     } finally { lock.current = false; setBusy(false); }
   };
-  return <><Button disabled={busy} onClick={download}>{busy ? <Loader2 className="animate-spin" /> : <Download />}ดาวน์โหลดซ้ำฟรี</Button>{busy && createPortal(<div aria-hidden ref={ref} className="pointer-events-none fixed top-0 left-[-20000px] w-[1080px]"><PosterPreview game={order.game} skinIds={order.doc.skins} cols={order.cols} template={order.doc.template} decoration={{ ...DEFAULT_DECORATION, ...order.doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}</>;
+  return <><Button disabled={busy} onClick={download}>{busy ? <Loader2 className="animate-spin" /> : <Download />}{label}</Button>{busy && createPortal(<div aria-hidden ref={ref} className="pointer-events-none fixed top-0 left-[-20000px] w-[1080px]"><PosterPreview game={order.game} skinIds={order.doc.skins} cols={order.cols} template={order.doc.template} decoration={{ ...DEFAULT_DECORATION, ...order.doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}</>;
 }

@@ -7,7 +7,6 @@ import { EditorBottomBar } from "@/components/editor/editor-bottom-bar";
 import { EditorHydrator } from "@/components/editor/editor-hydrator";
 import { EditorMobileSteps } from "@/components/editor/editor-mobile-steps";
 import { GAMES, getGame } from "@/lib/games";
-import { MOCK_USER } from "@/lib/mock";
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ game: g.slug }));
@@ -27,7 +26,7 @@ export default async function EditorLayout({ children, params }: { children: Rea
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
-      <EditorTopBar balance={MOCK_USER.wallet.balance} />
+      <EditorTopBar />
       {/* useSearchParams ต้องอยู่ใน Suspense */}
       <Suspense>
         <EditorHydrator />

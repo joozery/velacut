@@ -7,7 +7,9 @@ import { RadioCard, RadioCardGroup } from "@/components/ui/radio-card";
 import { BRAND_NAME, copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
 import type { GameSlug } from "@/lib/games";
-import { posterSignature, useCheckoutStore, useDemoWallet } from "@/stores/checkout-store";
+import { posterSignature } from "@/lib/account";
+import { useAccountStore, useBalance } from "@/stores/account-store";
+import { useSession } from "next-auth/react";
 import { PRICE_PER_SKIN, TEMPLATE_PRICES, payableTotal } from "@/lib/pricing";
 import { cn, fmt } from "@/lib/utils";
 import { DEFAULT_DECORATION, useEditorStore, useGameEditor, type OutputMode } from "@/stores/editor-store";
@@ -24,11 +26,13 @@ export function useCheckout(game: GameSlug) {
   const output: OutputMode = doc.output ?? "clean";
   const skinCost = Math.round(skins.length * PRICE_PER_SKIN * 100) / 100;
   const templateFee = TEMPLATE_PRICES[doc.template].price;
-  const paid = useCheckoutStore((s) => s.orders.some((o) => o.signature === posterSignature(game, doc, viewCols)));
+  const loggedIn = useSession().status === "authenticated";
+  const signature = posterSignature(game, doc, viewCols);
+  const paid = useAccountStore((s) => s.account?.paidSignatures.includes(signature) ?? false);
   const total = paid ? 0 : payableTotal(skins.length, doc.template, output);
-  const balance = useDemoWallet();
+  const balance = useBalance();
   const after = Math.round((balance - total) * 100) / 100;
-  return { output, skinCost, templateFee, total, balance, after, paid, short: after < 0 ? -after : 0 };
+  return { output, skinCost, templateFee, total, balance, after, paid, loggedIn, short: loggedIn && after < 0 ? -after : 0 };
 }
 
 function Row({ label, sub, value, className }: { label: string; sub?: string; value: string; className?: string }) {
@@ -67,7 +71,7 @@ export function CheckoutStep({ game }: { game: GameSlug }) {
       </section>
 
       <aside className="border-t border-border bg-surface p-5 sm:p-6 lg:overflow-y-auto lg:border-t-0 lg:border-l">
-        <p className="mb-4 rounded-xl bg-primary-soft p-3 text-xs leading-5 text-primary">โหมดทดลอง · ใช้คอยน์ทดลองในเบราว์เซอร์ ไม่มีการเรียกเก็บเงินจริง ดาวน์โหลด PNG ได้จริง</p>
+        {!k.loggedIn && <p className="mb-4 rounded-xl bg-primary-soft p-3 text-xs leading-5 text-primary">เข้าสู่ระบบเพื่อดาวน์โหลดแบบไม่มีลายน้ำ · แบบมีลายน้ำดาวน์โหลดฟรีได้เลย</p>}
         {doc.template === "b" && !doc.decoration?.price && (
           <div role="status" className="mb-5 flex items-center gap-3 rounded-2xl bg-primary-soft p-3 text-primary-soft-foreground">
             <AlertCircle className="size-5 shrink-0" aria-hidden />

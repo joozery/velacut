@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "หน้าแรก", icon: House },
-  { href: "/topup", label: "เติมคอยน์", icon: Wallet },
+  { href: "/topup", label: "เติมเครดิต", icon: Wallet },
   { href: "/generate/mlbb", match: "/generate", label: "สร้างป้าย", icon: Plus },
   { href: "/history", label: "ประวัติ", icon: History },
   { href: "/profile", label: "บัญชี", icon: UserRound },

@@ -3,14 +3,12 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/logo";
-import { CoinBalance } from "@/components/layout/coin-balance";
-import { UserMenu } from "@/components/layout/user-menu";
+import { AccountActions } from "@/components/layout/account-actions";
 import { EditorCrumbs } from "./editor-crumbs";
 import { copy } from "@/lib/copy";
-import { MOCK_USER } from "@/lib/mock";
 import { EditorMobileHeader } from "./editor-mobile-header";
 
-export function EditorTopBar({ balance }: { balance: number }) {
+export function EditorTopBar() {
   return (
     <>
     <Suspense><EditorMobileHeader /></Suspense>
@@ -27,8 +25,7 @@ export function EditorTopBar({ balance }: { balance: number }) {
             <History aria-hidden />
           </Link>
         </Button>
-        <CoinBalance balance={balance} />
-        <UserMenu user={MOCK_USER} />
+        <AccountActions />
       </div>
     </header>
     </>

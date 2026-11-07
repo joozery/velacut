@@ -9,8 +9,10 @@ const nextConfig: NextConfig = {
     const old = ["rov", "freefire"];
     return old.flatMap((g) => [
       { source: `/generate/${g}`, destination: "/generate/mlbb", permanent: true },
-      { source: `/assets/${g}`, destination: "/assets/mlbb", permanent: true },
-    ]);
+    ]).concat(
+      // หน้าคลังภาพถูกเอาออกแล้ว — ลิงก์เก่าพาไปหน้าสร้างป้าย
+      { source: "/assets/:path*", destination: "/generate/mlbb", permanent: false },
+    );
   },
 };
 

@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
 import { Providers } from "@/components/shared/providers";
 import { copy } from "@/lib/copy";
+import { getAppearanceSafe } from "@/lib/server/appearance";
+import { appearanceTokens } from "@/lib/appearance";
+import { AppearanceProvider } from "@/components/shared/appearance-provider";
 import "./globals.css";
 
 const font = Noto_Sans_Thai({
@@ -11,10 +14,10 @@ const font = Noto_Sans_Thai({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: { default: `${copy.brand.name} — ${copy.brand.tagline}`, template: `%s · ${copy.brand.name}` },
-  description: copy.brand.metaDescription,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getAppearanceSafe();
+  return { title: { default: `${site.name} — ${copy.brand.tagline}`, template: `%s · ${site.name}` }, description: site.description };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -23,11 +26,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const site = await getAppearanceSafe();
+  const tokens = (color: string) => Object.entries(appearanceTokens(color)).map(([key, value]) => `${key}:${value}`).join(";");
   return (
     // ต้องใส่ font.variable ที่ <html> เพราะ --font-sans ถูกประกาศที่ :root และอ้าง var(--font-thai)
     <html lang="th" className={font.variable} suppressHydrationWarning>
       <body className="antialiased">
+        <style>{`:root{${tokens(site.primaryLight)}}.dark{${tokens(site.primaryDark)}}`}</style>
         {/*
           ห่อทั้งแอปด้วย tag เฉพาะของเราเอง: browser extension หลายตัวแทรก <div> เข้ามาใน <body>
           ก่อน React hydrate — React 19 จะข้าม element แปลกปลอมได้ก็ต่อเมื่อชื่อ tag ไม่ตรงกับที่คาดไว้
@@ -40,7 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           >
             {copy.common.skipToContent}
           </a>
-          <Providers>{children}</Providers>
+          <AppearanceProvider value={site}><Providers>{children}</Providers></AppearanceProvider>
         </velacut-app>
       </body>
     </html>

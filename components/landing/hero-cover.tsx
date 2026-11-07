@@ -25,17 +25,6 @@ const slides = [
     href: "/generate/mlbb",
     points: ["เลือกสกินจากคลังจริง", "ลากจัดเรียงได้อิสระ", "ดาวน์โหลดพร้อมโพสต์"],
   },
-  {
-    image: "/images/hero-cover-library-v1.webp",
-    tab: "คลังภาพ",
-    eyebrow: "ASSET LIBRARY",
-    title: "สกินที่ชอบ",
-    highlight: "พร้อมให้สร้างสรรค์",
-    description: "ดาวน์โหลดภาพสกิน MLBB ฟรี แล้วเริ่มสร้างป้ายในแบบของคุณ",
-    cta: "เปิดคลังภาพฟรี",
-    href: "/assets/mlbb",
-    points: ["ภาพสกินคมชัด", "ค้นหาตามฮีโร่", "อัปเดตสม่ำเสมอ"],
-  },
 ] as const;
 
 const motionQuery = "(prefers-reduced-motion: reduce)";

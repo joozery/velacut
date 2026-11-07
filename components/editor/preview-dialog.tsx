@@ -12,7 +12,7 @@ const p = copy.editor.preview;
 
 /**
  * Preview ฝั่ง client: ภาพเบลอ + ลายน้ำ + กุญแจ
- * (ภาพจริงจะ render ฝั่ง server หลังตัดคอยน์แล้วเท่านั้น — Phase 5)
+ * (ภาพจริงจะ render ฝั่ง server หลังตัดเครดิตแล้วเท่านั้น — Phase 5)
  */
 export function PreviewDialog({
   game,

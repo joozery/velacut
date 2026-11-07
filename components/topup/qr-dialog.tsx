@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Copy, Loader2, RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import QRCode from "qrcode";
+import { CheckCircle2, Copy, ImageUp, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UiIcon } from "@/components/icons/ui-icon";
 import { copy } from "@/lib/copy";
 import { formatBaht } from "@/lib/format";
-import { QR_TTL_MIN } from "@/lib/topup";
+import type { TopupTicket } from "@/lib/account";
+import { topupStatusAction } from "@/app/actions/account";
+import { useAccountStore } from "@/stores/account-store";
 import { cn, fmt, hashString } from "@/lib/utils";
 import { toast } from "@/stores/toast-store";
 
@@ -15,7 +18,7 @@ const t = copy.topup;
 
 /**
  * ภาพ QR "ตัวอย่าง" — ไม่ใช่ PromptPay payload จริง (สแกนแล้วไม่ได้อะไร)
- * Phase 4: สร้าง EMVCo payload ฝั่ง server จาก PromptPay ID ของร้าน + uniqueAmount
+ * TODO: สร้าง EMVCo payload จาก PromptPay ID ของร้าน + ticket.payAmount
  */
 function SampleQr({ seed }: { seed: string }) {
   const n = 25;
@@ -47,31 +50,104 @@ function SampleQr({ seed }: { seed: string }) {
   );
 }
 
-function useCountdown(open: boolean, key: number) {
-  const [left, setLeft] = useState(QR_TTL_MIN * 60);
+/** นับถอยหลังจากเวลาหมดอายุของคำสั่งที่ server กำหนด */
+function useCountdown(expiresAt: string | undefined) {
+  const calc = () => (expiresAt ? Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000)) : 0);
+  const [left, setLeft] = useState(calc);
   useEffect(() => {
-    if (!open) return;
-    setLeft(QR_TTL_MIN * 60);
-    const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
+    setLeft(calc());
+    if (!expiresAt) return;
+    const id = setInterval(() => setLeft(calc()), 1000);
     return () => clearInterval(id);
-  }, [open, key]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt]);
   return left;
 }
 
-export function QrDialog({
-  open,
-  onOpenChange,
-  amount,
-  coins,
-  onRenew,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  amount: number;
-  coins: number;
-  onRenew: () => void;
-}) {
-  const left = useCountdown(open, amount);
+/** ถามสถานะคำสั่งทุก 5 วินาที — ผู้ดูแลยืนยันยอดแล้วจะปิดหน้าต่างและอัปเดตยอดให้ */
+function usePaidWatcher(ticket: TopupTicket | null, onPaid: () => void) {
+  const paidRef = useRef(onPaid);
+  useEffect(() => { paidRef.current = onPaid; });
+  useEffect(() => {
+    if (!ticket) return;
+    let stop = false;
+    const id = setInterval(async () => {
+      const r = await topupStatusAction(ticket.id).catch(() => null);
+      if (stop || !r?.ok) return;
+      if (r.data.status === "completed") {
+        if (r.data.account) useAccountStore.getState().setAccount(r.data.account);
+        toast({ title: "เติมเครดิตสำเร็จ", description: `ได้รับ ${ticket.coins.toLocaleString("th-TH")} เครดิต`, variant: "success" });
+        paidRef.current();
+      }
+    }, 5000);
+    return () => { stop = true; clearInterval(id); };
+  }, [ticket]);
+}
+
+/** QR PromptPay จริงจาก payload (สร้างฝั่ง server) */
+function RealQr({ payload }: { payload: string }) {
+  const [svg, setSvg] = useState("");
+  useEffect(() => {
+    let alive = true;
+    QRCode.toString(payload, { type: "svg", errorCorrectionLevel: "M", margin: 0, color: { dark: "#111114", light: "#ffffff" } }).then((s) => alive && setSvg(s));
+    return () => { alive = false; };
+  }, [payload]);
+  // svg สร้างจาก payload ของเราเอง (ไม่มีข้อมูลจากผู้ใช้) จึงฝังได้
+  return svg ? <div aria-label="QR PromptPay" role="img" className="size-full [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: svg }} /> : <div className="size-full animate-pulse rounded-lg bg-surface-2" />;
+}
+
+/** อัปโหลดสลิปเพื่อตรวจอัตโนมัติ (Slip2Go) */
+function SlipUpload({ ticketId, onPaid }: { ticketId: string; onPaid: () => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  const upload = async (file: File) => {
+    setError("");
+    setPreview(URL.createObjectURL(file));
+    setBusy(true);
+    try {
+      const body = new FormData();
+      body.append("id", ticketId);
+      body.append("file", file);
+      const res = await fetch("/api/topup/slip", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "ตรวจสลิปไม่สำเร็จ");
+      if (data.account) useAccountStore.getState().setAccount(data.account);
+      toast({ title: "เติมเครดิตสำเร็จ", description: `ได้รับ ${Number(data.coins).toLocaleString("th-TH")} เครดิต`, variant: "success" });
+      onPaid();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ตรวจสลิปไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+      if (ref.current) ref.current.value = "";
+    }
+  };
+  return (
+    <div className="rounded-2xl border border-dashed border-primary/40 bg-primary-soft/30 p-3">
+      <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label="เลือกรูปสลิป" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
+      <div className="flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {preview ? <img src={preview} alt="สลิปที่เลือก" className="h-14 w-10 shrink-0 rounded-md border border-border object-cover" /> : <span className="grid h-14 w-10 shrink-0 place-items-center rounded-md bg-surface text-primary"><ImageUp className="size-5" aria-hidden /></span>}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold">โอนแล้ว? อัปโหลดสลิป</p>
+          <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">ระบบตรวจสลิปและเติมเครดิตให้อัตโนมัติ</p>
+        </div>
+        <Button size="sm" className="shrink-0 rounded-lg" disabled={busy} onClick={() => ref.current?.click()}>{busy ? <Loader2 className="animate-spin" aria-hidden /> : <CheckCircle2 aria-hidden />}{busy ? "กำลังตรวจ…" : "เลือกสลิป"}</Button>
+      </div>
+      {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
+    </div>
+  );
+}
+
+export function QrDialog({ ticket, onClose, onRenew, slipEnabled }: { ticket: TopupTicket | null; onClose: () => void; onRenew: () => void; slipEnabled: boolean }) {
+  const isWallet = ticket?.method === "truemoney_wallet";
+  const open = !!ticket;
+  const amount = ticket?.payAmount ?? 0;
+  const coins = ticket?.coins ?? 0;
+  const left = useCountdown(ticket?.expiresAt);
+  usePaidWatcher(ticket, onClose);
   const expired = left === 0;
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
   const ss = String(left % 60).padStart(2, "0");
@@ -84,32 +160,33 @@ export function QrDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogHeader className="items-center pr-0 text-center">
-          <span className="mb-1 grid size-12 place-items-center rounded-2xl bg-primary-soft text-primary">
-            <UiIcon name="qr-code" className="size-7" />
-          </span>
-          <DialogTitle>{t.qrTitle}</DialogTitle>
-          <DialogDescription>{t.qrDesc}</DialogDescription>
+          {isWallet ? <Image src="/images/payments/truemoney.webp" alt="TrueMoney Wallet" width={220} height={43} className="mb-1 h-7 w-auto" /> : <Image src="/images/payments/thai-qr.webp" alt="Thai QR Payment" width={791} height={240} className="mb-1 h-9 w-auto rounded-md" />}
+          <DialogTitle>{isWallet ? t.walletTransfer.title : t.qrTitle}</DialogTitle>
+          <DialogDescription>{isWallet ? t.walletTransfer.description : t.qrDesc}</DialogDescription>
         </DialogHeader>
 
-        <div className="relative mx-auto w-56">
+        {isWallet ? <div className="rounded-2xl border border-orange-300/40 bg-orange-50 p-4 text-center dark:bg-orange-400/10"><p className="text-xs text-muted-foreground">{t.walletTransfer.receiver}</p><p className="mt-2 text-2xl font-bold tabular-nums">{ticket?.walletMobile}</p><Button size="sm" variant="outline" className="mt-3" onClick={async () => { try { await navigator.clipboard.writeText(ticket?.walletMobile ?? ""); toast({ title: t.walletTransfer.copied, variant: "success" }); } catch {} }}><Copy aria-hidden />{t.walletTransfer.copy}</Button>{expired && <Button size="sm" className="mt-3 ml-2" onClick={onRenew}><RefreshCw aria-hidden />{t.qrRenew}</Button>}</div> : <div className="relative mx-auto w-56">
           <div className={cn("aspect-square rounded-2xl border border-border bg-white p-3 shadow-soft", expired && "opacity-20 blur-[2px]")}>
-            <SampleQr seed={amount.toFixed(2)} />
+            {ticket?.qrPayload ? <RealQr payload={ticket.qrPayload} /> : <SampleQr seed={amount.toFixed(2)} />}
           </div>
-          {/* ป้ายกันสับสน: QR ตัวอย่างห้ามสแกนจ่าย */}
-          <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 rotate-[-8deg] bg-danger/90 py-1 text-center text-[11px] font-bold text-white shadow">
-            {t.qrSample}
-          </span>
+          {/* ป้ายกันสับสน: ยังไม่ตั้งพร้อมเพย์ร้าน → QR ตัวอย่างห้ามสแกนจ่าย */}
+          {!ticket?.qrPayload && (
+            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 rotate-[-8deg] bg-danger/90 py-1 text-center text-[11px] font-bold text-white shadow">
+              {t.qrSample}
+            </span>
+          )}
           {expired && (
             <Button size="sm" className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full" onClick={onRenew}>
               <RefreshCw aria-hidden />
               {t.qrRenew}
             </Button>
           )}
-        </div>
+        </div>}
 
+        {ticket?.payeeName && <p className="-mt-2 text-center text-xs text-muted-foreground">ชื่อบัญชี: <span className="font-semibold text-foreground">{ticket.payeeName}</span></p>}
         <div className="rounded-2xl bg-surface-2 p-4 text-center">
           <p className="text-xs text-muted-foreground">{t.qrAmount}</p>
           <p className="mt-0.5 text-3xl font-bold tabular-nums">฿{formatBaht(amount)}</p>
@@ -122,6 +199,8 @@ export function QrDialog({
           </Button>
         </div>
 
+        {slipEnabled && ticket && (ticket.qrPayload || isWallet) && <SlipUpload ticketId={ticket.id} onPaid={onClose} />}
+
         <div className="flex items-center justify-between text-xs" aria-live="polite">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -131,7 +210,7 @@ export function QrDialog({
             {expired ? t.qrExpired : fmt(t.qrExpires, { time: `${mm}:${ss}` })}
           </span>
         </div>
-        <p className="text-center text-[11px] text-muted-foreground">{t.qrNote}</p>
+        <p className="text-center text-[11px] text-muted-foreground">{slipEnabled ? "โอนให้ตรงยอดทุกหลักรวมเศษสตางค์ แล้วอัปโหลดสลิปด้านบน" : t.qrNote}</p>
       </DialogContent>
     </Dialog>
   );

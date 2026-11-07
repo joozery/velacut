@@ -270,8 +270,8 @@ export function Features() {
   return (
     <Section id="features" className="bg-background">
       <SectionTitle title={f.title} highlight={f.titleHighlight} description={f.description} />
-      <Stagger gap={0.1} className="mx-auto mt-12 grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-3">
-        <BentoCard title={f.drag.title} desc={f.drag.desc} className="lg:col-span-2">
+      <Stagger gap={0.1} className="mx-auto mt-12 grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <BentoCard title={f.drag.title} desc={f.drag.desc} className="md:col-span-2">
           <DemoGrid skins={demoSkins("mlbb", 16)} />
         </BentoCard>
 
@@ -299,24 +299,6 @@ export function Features() {
               {f.decorate.tags.map((t) => <li key={t}>{t}</li>)}
             </ul>
           </MiniPanel>
-        </BentoCard>
-
-        <BentoCard title={f.library.title} desc={f.library.desc} className="lg:col-span-2">
-          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Download className="size-3.5" aria-hidden />{f.library.label}</span>
-            <span>{f.library.free}</span>
-          </div>
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
-            {GAMES.map((g) => (
-              <li key={g.slug}>
-                <Link href={`/assets/${g.slug}`} className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-surface-2">
-                  <GameIcon game={g} className="size-8 rounded-lg text-[9px]" />
-                  <span className="flex-1">{g.name}</span>
-                  <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
         </BentoCard>
       </Stagger>
     </Section>

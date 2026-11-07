@@ -1,39 +1,41 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { ClipboardPaste, TriangleAlert } from "lucide-react";
+import Image from "next/image";
+import { ClipboardPaste, Loader2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UiIcon } from "@/components/icons/ui-icon";
 import { copy } from "@/lib/copy";
 import { formatBaht, formatInt } from "@/lib/format";
 import { cn, fmt } from "@/lib/utils";
 import { toast } from "@/stores/toast-store";
+import { useAccountStore } from "@/stores/account-store";
+import { trueMoneyTopupAction } from "@/app/actions/account";
+import { parseGiftLink } from "@/lib/payments";
 
 const t = copy.topup.truemoney;
 
-/** ลิงก์ซองของขวัญ TrueMoney */
-const GIFT_LINK_RE = /^https:\/\/gift\.truemoney\.com\/campaign\/\?v=[A-Za-z0-9]{10,64}$/;
-
 /**
- * เติมคอยน์ด้วยซองของขวัญ TrueMoney: ผู้ใช้สร้างซองตามยอด แล้ววางลิงก์
- * Phase 4: server action รับลิงก์ → redeem ซองเข้าเบอร์ร้าน → ตรวจยอดตรงกับคำสั่ง → เติมคอยน์ใน transaction
+ * เติมเครดิตด้วยซองของขวัญ TrueMoney: ผู้ใช้สร้างซองตามยอด แล้ววางลิงก์
+ * Phase 4: server action รับลิงก์ → redeem ซองเข้าเบอร์ร้าน → ตรวจยอดตรงกับคำสั่ง → เติมเครดิตใน transaction
  */
 export function TrueMoneyDialog({
   open,
   onOpenChange,
   baht,
   coins,
+  enabled,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   baht: number;
   coins: number;
+  enabled: boolean;
 }) {
   const id = useId();
   const [link, setLink] = useState("");
   const [touched, setTouched] = useState(false);
-  const valid = GIFT_LINK_RE.test(link.trim());
+  const valid = Boolean(parseGiftLink(link));
 
   useEffect(() => {
     if (!open) {
@@ -49,11 +51,19 @@ export function TrueMoneyDialog({
     } catch {}
   };
 
-  const submit = (e: React.FormEvent) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
-    toast({ title: t.done, description: t.doneDesc });
+    if (!valid || busy || !enabled) return;
+    setBusy(true);
+    setError("");
+    const r = await trueMoneyTopupAction(link.trim()).catch(() => null);
+    setBusy(false);
+    if (!r?.ok) return setError(r?.error ?? "รับซองไม่สำเร็จ กรุณาลองใหม่");
+    useAccountStore.getState().setAccount(r.data.account);
+    toast({ title: t.done, description: fmt(t.doneDesc, { baht: formatBaht(r.data.baht), n: formatInt(r.data.coins) }), variant: "success" });
     onOpenChange(false);
   };
 
@@ -62,9 +72,7 @@ export function TrueMoneyDialog({
       <DialogContent className="max-w-md">
         <form onSubmit={submit} noValidate className="grid gap-4">
           <DialogHeader className="items-center pr-0 text-center">
-            <span className="mb-1 grid size-12 place-items-center rounded-2xl bg-[#ff8200] text-white shadow-soft-sm">
-              <UiIcon name="wallet-balance" className="size-7" />
-            </span>
+            <Image src="/images/payments/truemoney.webp" alt="TrueMoney" width={220} height={43} className="mb-1 h-7 w-auto" />
             <DialogTitle>{t.title}</DialogTitle>
             <DialogDescription>{t.description}</DialogDescription>
           </DialogHeader>
@@ -121,10 +129,12 @@ export function TrueMoneyDialog({
             {t.warn}
           </p>
 
-          <Button type="submit" size="lg" block className="rounded-xl bg-[#ff8200] text-white hover:bg-[#e67500]">
-            {t.submit}
+          {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+          <Button type="submit" size="lg" block disabled={busy || !enabled} className="rounded-xl bg-[#ff8200] text-white hover:bg-[#e67500]">
+            {busy && <Loader2 className="animate-spin" aria-hidden />}
+            {busy ? "กำลังรับซอง…" : t.submit}
           </Button>
-          <p className="text-center text-[11px] text-muted-foreground">{t.note}</p>
+          <p className="text-center text-[11px] text-muted-foreground">{enabled ? t.note : "ยังไม่เปิดใช้การเติมด้วย TrueMoney"}</p>
         </form>
       </DialogContent>
     </Dialog>

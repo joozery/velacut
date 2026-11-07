@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, History, House, Images, Menu, MessageCircle, Sparkles, UserRound, Wallet } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useLogout } from "@/components/auth/use-logout";
+import { ArrowUpRight, FileImage, LogOut, History, House, Menu, MessageCircle, Sparkles, UserRound, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { PillNavItem } from "@/components/ui/pill-nav";
 import { copy } from "@/lib/copy";
@@ -11,10 +14,13 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
 import { Logo } from "@/components/shared/logo";
 
-const icons = { "/": House, "/generate": Sparkles, "/assets": Images, "/topup": Wallet, "/history": History, "/profile": UserRound, "/chat": MessageCircle };
+const icons = { "/": House, "/generate": Sparkles, "/topup": Wallet, "/posters": FileImage, "/history": History, "/profile": UserRound, "/chat": MessageCircle };
 
 export function MobileMenu({ items, className }: { items: PillNavItem[]; className?: string }) {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const { logout, pending } = useLogout();
+  const user = session?.user;
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -56,6 +62,18 @@ export function MobileMenu({ items, className }: { items: PillNavItem[]; classNa
             })}
           </ul>
         </nav>
+        {user ? (
+          <div className="mx-4 mt-3 flex shrink-0 items-center gap-3 rounded-2xl border border-border px-4 py-3">
+            <Avatar src={user.image ?? undefined} alt={user.name ?? "รูปโปรไฟล์"} fallback={(user.name ?? user.email ?? "?").trim().slice(0, 2).toUpperCase()} />
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{user.name}</span><span className="block truncate text-[11px] text-muted-foreground">{user.email}</span></span>
+            <Button variant="ghost" size="sm" disabled={pending} onClick={logout} className="text-danger"><LogOut aria-hidden />{pending ? "กำลังออกจากระบบ…" : copy.header.logout}</Button>
+          </div>
+        ) : status !== "loading" && (
+          <div className="mx-4 mt-3 grid shrink-0 grid-cols-2 gap-2">
+            <SheetClose asChild><Button asChild variant="outline"><Link href="/register">สมัครสมาชิก</Link></Button></SheetClose>
+            <SheetClose asChild><Button asChild><Link href={pathname === "/" ? "/login" : `/login?callbackUrl=${encodeURIComponent(pathname)}`}>{copy.header.login}</Link></Button></SheetClose>
+          </div>
+        )}
         <div className="mx-4 mt-3 mb-[max(1rem,env(safe-area-inset-bottom))] flex shrink-0 items-center justify-between rounded-2xl border border-border bg-surface-2/60 px-4 py-3">
           <span><span className="block text-xs font-medium">{copy.header.theme}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">ปรับหน้าจอให้สบายตา</span></span>
           <ThemeToggle />

@@ -10,11 +10,11 @@ import { CoinIcon } from "@/components/shared/coin";
 import { DailyRewardDialog } from "./daily-reward-dialog";
 import { copy } from "@/lib/copy";
 import { formatCoins } from "@/lib/format";
-import { DAILY_REWARDS } from "@/lib/mock";
+import type { DailyConfig } from "@/lib/daily";
 import { CONTACT_CHANNELS, type ContactChannel } from "@/lib/contact";
 import { toast } from "@/stores/toast-store";
 import { cn, fmt } from "@/lib/utils";
-import { nextRewardDay, useDailyReward } from "@/stores/daily-reward-store";
+import { nextRewardDay, useDaily } from "@/stores/account-store";
 
 const NUDGE_DELAY = 1500;
 const NUDGE_KEY = "velacut-reward-nudge-dismissed";
@@ -83,10 +83,10 @@ function ChannelButton({ ch, index, onDone }: { ch: ContactChannel; index: numbe
 }
 
 /** dock ทางลัดมุมขวาล่าง: รางวัลรายวัน + แชทซัพพอร์ต */
-export function FloatingActions() {
+export function FloatingActions({ daily }: { daily: DailyConfig }) {
   const pathname = usePathname();
   const [heroActionsVisible, setHeroActionsVisible] = useState(false);
-  const { claimed, claimedToday } = useDailyReward();
+  const { claimed, claimedToday } = useDaily();
   const [rewardOpen, setRewardOpen] = useState(false);
   const [nudge, setNudge] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -130,12 +130,12 @@ export function FloatingActions() {
       document.removeEventListener("keydown", onKey);
     };
   }, [contactOpen]);
-  const day = nextRewardDay(claimed);
-  const reward = DAILY_REWARDS[day - 1]?.reward ?? 0;
+  const day = nextRewardDay(claimed, daily.days.length);
+  const reward = daily.days[day - 1]?.reward ?? 0;
 
   // บับเบิลชวนเช็กอิน: โผล่หลังเข้าเว็บสักพัก ถ้ายังไม่รับและยังไม่เคยปิดในแท็บนี้
   useEffect(() => {
-    if (claimedToday) return setNudge(false);
+    if (claimedToday || !daily.enabled) return setNudge(false);
     let dismissed = false;
     try {
       dismissed = sessionStorage.getItem(NUDGE_KEY) === "1";
@@ -143,7 +143,7 @@ export function FloatingActions() {
     if (dismissed) return;
     const t = setTimeout(() => setNudge(true), NUDGE_DELAY);
     return () => clearTimeout(t);
-  }, [claimedToday]);
+  }, [claimedToday, daily.enabled]);
 
   const dismissNudge = () => {
     setNudge(false);
@@ -206,6 +206,7 @@ export function FloatingActions() {
 
       {/* dock */}
       <div className="relative flex flex-col gap-1 rounded-full border border-border bg-surface/90 p-1 shadow-soft-lg backdrop-blur-md">
+        {daily.enabled && <>
         <Tooltip content={copy.dailyReward.fabAria} side="left">
           <button type="button" onClick={openReward} aria-label={copy.dailyReward.fabAria} className={cn(dockBtn, !claimedToday && "text-primary")}>
             <m.span
@@ -229,6 +230,7 @@ export function FloatingActions() {
         </Tooltip>
 
         <span aria-hidden className="mx-auto h-px w-6 bg-border" />
+        </>}
 
         <button
           type="button"
@@ -273,7 +275,7 @@ export function FloatingActions() {
         </AnimatePresence>
       </div>
 
-      <DailyRewardDialog open={rewardOpen} onOpenChange={setRewardOpen} />
+      {daily.enabled && <DailyRewardDialog config={daily} open={rewardOpen} onOpenChange={setRewardOpen} />}
     </m.div>
   );
 }

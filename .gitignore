@@ -45,3 +45,5 @@ next-env.d.ts
 
 # raw downloads for scripts/import-skins.ts
 /.cache/
+
+!.env.example
