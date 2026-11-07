@@ -5,6 +5,8 @@ import { Coins, Empty, KIND_LABEL, StatusBadge, formatDateTime } from "./ui";
 import { TopupActions } from "./topup-actions";
 import { TopupEvidenceDialog } from "./topup-evidence-dialog";
 
+const methodLabels = { promptpay: "PromptPay", truemoney_wallet: "Wallet โอนเบอร์", truemoney: "ซองอั่งเปา" };
+
 /** ตารางรายการ — ถ้า showActions จะมีปุ่มยืนยัน/ปฏิเสธสำหรับคำสั่งเติมที่ยืนยันได้ */
 export function TxTable({ rows, showActions = false, showUser = true }: { rows: TxRow[]; showActions?: boolean; showUser?: boolean }) {
   if (!rows.length) return <Empty>ไม่มีรายการ</Empty>;
@@ -27,18 +29,20 @@ export function TxTable({ rows, showActions = false, showUser = true }: { rows: 
           {rows.map((r) => {
             const expired = r.topup ? new Date(r.topup.expiresAt).getTime() < now : false;
             const actionable = r.kind === "topup" && (r.status === "pending" || (r.status === "failed" && r.topup?.failReason === "expired"));
+            const automatic = r.topup?.confirmedBy?.startsWith("slip2go:") ? "ตรวจสลิปอัตโนมัติ" : r.topup?.confirmedBy?.startsWith("truemoney:") ? "รับซองอัตโนมัติ" : null;
             return (
               <tr key={r.id} className="align-top hover:bg-surface-2/30">
                 <td className="px-4 py-3">
                   <p className="font-medium">{r.title}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{KIND_LABEL[r.kind]} · {r.description}</p>
                   <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">{r.id}</p>
+                  {r.topup && <div className="mt-2 flex flex-wrap gap-1.5"><span className="rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[10px] text-muted-foreground">{methodLabels[r.topup.method]}</span>{automatic && <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] text-success">{automatic}</span>}{r.topup.confirmedBy && !automatic && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] text-primary">แอดมินยืนยัน</span>}</div>}
                   {r.kind === "adjust" && <p className="mt-1 text-xs text-muted-foreground">เหตุผล: {r.note}</p>}
                   {r.kind === "topup" && <TopupEvidenceDialog id={r.id} />}
-                  {(r.topup?.confirmedBy || r.topup?.rejectedBy) && <p className="mt-1 text-[11px] text-muted-foreground">{r.topup.confirmedBy ? "ยืนยันโดย" : "ปฏิเสธโดย"} {r.topup.confirmedBy ?? r.topup.rejectedBy}</p>}
+                  {!automatic && (r.topup?.confirmedBy || r.topup?.rejectedBy) && <p className="mt-1 text-[11px] text-muted-foreground">{r.topup.confirmedBy ? "ยืนยันโดย" : "ปฏิเสธโดย"} {r.topup.confirmedBy ?? r.topup.rejectedBy}</p>}
                 </td>
                 {showUser && <td className="max-w-48 px-3 py-3"><Link href={`/admin/users/${r.userId}`} className="block truncate text-xs text-primary hover:underline">{r.userEmail}</Link></td>}
-                <td className="px-3 py-3 text-xs whitespace-nowrap">{formatDateTime(r.date)}{r.status === "pending" && r.topup && <p className="mt-0.5 text-[11px] text-muted-foreground">หมดอายุ {formatDateTime(r.topup.expiresAt)}</p>}</td>
+                <td className="px-3 py-3 text-xs whitespace-nowrap">{formatDateTime(r.date)}{r.status === "pending" && r.topup && <p className="mt-0.5 text-[11px] text-muted-foreground">หมดอายุ {formatDateTime(r.topup.expiresAt)}</p>}{r.topup?.completedAt && <p className="mt-1 text-[10px] text-success">สำเร็จ {formatDateTime(r.topup.completedAt)}</p>}</td>
                 <td className="px-3 py-3 text-right whitespace-nowrap">{r.topup ? <span className="font-bold tabular-nums">฿{formatBaht(r.topup.payAmount)}</span> : <span className="text-muted-foreground">—</span>}</td>
                 <td className="px-3 py-3 text-right"><Coins value={r.coins} /></td>
                 <td className="px-3 py-3"><StatusBadge status={r.status} reason={r.topup?.failReason} /></td>

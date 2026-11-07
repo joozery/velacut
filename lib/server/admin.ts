@@ -31,7 +31,7 @@ const page = (p: unknown) => Math.max(1, Math.floor(Number(p)) || 1);
 export type TxRow = {
   id: string; userId: string; userEmail: string; kind: HistoryKind; status: HistoryStatus; coins: number;
   title: string; description: string; note: string; date: string;
-  topup?: { baht: number; payAmount: number; expiresAt: string; failReason?: string; confirmedBy?: string; rejectedBy?: string };
+  topup?: { method: "promptpay" | "truemoney" | "truemoney_wallet"; baht: number; payAmount: number; expiresAt: string; completedAt?: string; failReason?: string; confirmedBy?: string; rejectedBy?: string };
 };
 
 async function emailsFor(userIds: string[]) {
@@ -44,7 +44,7 @@ function toRow(t: TxDoc, emails: Map<string, string>): TxRow {
   return {
     id: t._id, userId: t.userId, userEmail: emails.get(t.userId) ?? "(ลบแล้ว)", kind: t.kind, status: t.status, coins: fromUnits(t.amount),
     title: t.title, description: t.description, note: t.note, date: t.createdAt.toISOString(),
-    ...(t.topup ? { topup: { baht: t.topup.baht, payAmount: t.topup.payAmount / 100, expiresAt: t.topup.expiresAt.toISOString(), failReason: t.topup.failReason, confirmedBy: t.topup.confirmedBy, rejectedBy: t.topup.rejectedBy } } : {}),
+    ...(t.topup ? { topup: { method: t.topup.method, baht: t.topup.baht, payAmount: t.topup.payAmount / 100, expiresAt: t.topup.expiresAt.toISOString(), completedAt: t.status === "completed" ? (t.completedAt ?? t.updatedAt).toISOString() : undefined, failReason: t.topup.failReason, confirmedBy: t.topup.confirmedBy, rejectedBy: t.topup.rejectedBy } } : {}),
   };
 }
 
@@ -69,25 +69,37 @@ export async function getStats() {
   };
 }
 
-export async function listTransactions(opts: { kind?: string; status?: string; q?: string; page?: unknown; userId?: string }) {
+export async function listTransactions(opts: { kind?: string; status?: string; q?: string; page?: unknown; userId?: string; method?: string; withStatusCounts?: boolean }) {
   await expireTopups();
   const { txs } = await collections();
   const filter: Filter<TxDoc> = {};
   if (opts.kind && opts.kind !== "all") filter.kind = opts.kind as HistoryKind;
   if (opts.status && opts.status !== "all") filter.status = opts.status as HistoryStatus;
   if (opts.userId) filter.userId = opts.userId;
+  if (["promptpay", "truemoney", "truemoney_wallet"].includes(opts.method ?? "")) filter["topup.method"] = opts.method;
   const q = opts.q?.trim();
   if (q) {
     const db = await getDb();
     const users = await db.collection<UserRow>("users").find({ $or: [{ email: { $regex: escapeRe(q.toLowerCase()) } }, { name: { $regex: escapeRe(q), $options: "i" } }] }, { projection: { _id: 1 } }).limit(200).toArray();
     // ค้นด้วยยอดโอน เช่น 200.37 → จับคู่กับสลิป
     const pay = /^\d+(\.\d{1,2})?$/.test(q) ? Math.round(Number(q) * 100) : null;
-    filter.$or = [{ _id: { $regex: escapeRe(q.toUpperCase()) } }, { userId: { $in: users.map((u) => u._id) } }, ...(pay ? [{ "topup.payAmount": pay }] : [])];
+    filter.$or = [{ _id: { $regex: escapeRe(q.toUpperCase()) } }, { "topup.slipRef": { $regex: escapeRe(q), $options: "i" } }, { userId: { $in: users.map((u) => u._id) } }, ...(pay ? [{ "topup.payAmount": pay }] : [])];
   }
-  const p = page(opts.page);
-  const [docs, total] = await Promise.all([txs.find(filter).sort({ createdAt: -1 }).skip((p - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray(), txs.countDocuments(filter)]);
+  const summaryFilter = { ...filter };
+  delete summaryFilter.status;
+  const [total, grouped] = await Promise.all([
+    txs.countDocuments(filter),
+    opts.withStatusCounts ? txs.aggregate<{ _id: HistoryStatus; count: number }>([{ $match: summaryFilter }, { $group: { _id: "$status", count: { $sum: 1 } } }]).toArray() : Promise.resolve([]),
+  ]);
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const p = Math.min(page(opts.page), pages);
+  const docs = await txs.find(filter).sort({ createdAt: -1, _id: -1 }).skip((p - 1) * PAGE_SIZE).limit(PAGE_SIZE).toArray();
   const emails = await emailsFor(docs.map((d) => d.userId));
-  return { rows: docs.map((d) => toRow(d, emails)), total, page: p, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  const counts = { all: 0, pending: 0, completed: 0, failed: 0 };
+  for (const row of grouped) {
+    if (row._id === "pending" || row._id === "completed" || row._id === "failed") { counts[row._id] = row.count; counts.all += row.count; }
+  }
+  return { rows: docs.map((d) => toRow(d, emails)), total, page: p, pages, counts };
 }
 
 export async function rejectTopup(id: string, by: string) {

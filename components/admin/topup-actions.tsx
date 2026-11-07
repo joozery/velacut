@@ -26,14 +26,14 @@ export function TopupActions({ id, email, payAmount, coins, expired }: Props) {
   return (
     <>
       <div className="flex justify-end gap-1.5">
-        <Button size="sm" className="h-8 rounded-lg px-2.5 text-xs" onClick={() => setMode("confirm")}><Check aria-hidden />ยืนยันยอด</Button>
+        <Button size="sm" variant="outline" className="h-8 rounded-lg px-2.5 text-xs" onClick={() => setMode("confirm")}><Check aria-hidden />ยืนยันเอง</Button>
         {!expired && <Button size="sm" variant="outline" className="h-8 rounded-lg px-2.5 text-xs" onClick={() => setMode("reject")}><X aria-hidden />ปฏิเสธ</Button>}
       </div>
       <Dialog open={!!mode} onOpenChange={(o) => !pending && !o && setMode(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{mode === "confirm" ? "ยืนยันว่าได้รับเงินแล้ว?" : "ปฏิเสธคำสั่งนี้?"}</DialogTitle>
-            <DialogDescription>{mode === "confirm" ? "ตรวจยอดในบัญชีธนาคารให้ตรงทุกหลักก่อนยืนยัน — ยืนยันแล้วยกเลิกไม่ได้" : "ใช้เมื่อตรวจไม่พบยอดโอน ผู้ใช้จะเห็นรายการนี้เป็น \"ไม่สำเร็จ\""}</DialogDescription>
+            <DialogDescription>{mode === "confirm" ? "ตรวจยอดในบัญชีรับเงินให้ตรงทุกหลักก่อนยืนยัน — ยืนยันแล้วยกเลิกไม่ได้" : "ใช้เมื่อตรวจไม่พบยอดโอน ผู้ใช้จะเห็นรายการนี้เป็น \"ไม่สำเร็จ\""}</DialogDescription>
           </DialogHeader>
           <dl className="grid gap-2 rounded-2xl bg-surface-2 p-4 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-muted-foreground">ยอดโอน</dt><dd className="text-lg font-bold tabular-nums">฿{formatBaht(payAmount)}</dd></div>

@@ -737,3 +737,31 @@ test("payments: copied endpoint URLs are normalized before testing and verifying
     return { code: "200200", data: { transRef: "NORMALIZED", amount: 100.25 } };
   }, async () => { assert.equal((await pay.verifySlipImage(new File(["test"], "slip.png", { type: "image/png" }), 100.25)).amount, 100.25); });
 });
+
+test("admin topups: status summaries respect search and payment method while status filters select rows", async () => {
+  const completed = await m.topup.createTopup(alice, { packageId: "p100" });
+  await m.topup.confirmTopup(completed.id, "slip2go:TEST-REF-ABC");
+  const pending = await m.topup.createTopup(bob, { packageId: "p50" });
+  const { txs } = await m.col.collections();
+  await txs.updateOne({ _id: completed.id }, { $set: { "topup.slipRef": "TEST-REF-ABC" } });
+  await txs.updateOne({ _id: pending.id }, { $set: { "topup.method": "truemoney_wallet" } });
+  const all = await m.admin.listTransactions({ kind: "topup", withStatusCounts: true });
+  assert.equal(all.total, 2);
+  assert.deepEqual(all.counts, { all: 2, pending: 1, completed: 1, failed: 0 });
+  assert.equal(all.rows.find(row => row.id === completed.id)?.topup?.method, "promptpay");
+  assert.ok(all.rows.find(row => row.id === completed.id)?.topup?.completedAt);
+  const waiting = await m.admin.listTransactions({ kind: "topup", status: "pending", withStatusCounts: true });
+  assert.equal(waiting.total, 1);
+  assert.equal(waiting.counts.completed, 1);
+  const wallet = await m.admin.listTransactions({ kind: "topup", method: "truemoney_wallet", withStatusCounts: true });
+  assert.equal(wallet.total, 1);
+  assert.equal(wallet.rows[0].id, pending.id);
+  assert.deepEqual(wallet.counts, { all: 1, pending: 1, completed: 0, failed: 0 });
+  const reference = await m.admin.listTransactions({ kind: "topup", q: "test-ref-abc", withStatusCounts: true });
+  assert.equal(reference.total, 1);
+  assert.equal(reference.rows[0].id, completed.id);
+  assert.equal(reference.counts.completed, 1);
+  const overflow = await m.admin.listTransactions({ kind: "topup", page: 999 });
+  assert.equal(overflow.page, 1);
+  assert.equal(overflow.rows.length, 2);
+});
