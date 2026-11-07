@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { getDb } from "@/lib/db/mongo";
 import { DEFAULT_APPEARANCE, DEFAULT_WATERMARK, HOME_SECTIONS, type Appearance } from "@/lib/appearance";
+import { CONTACT_CHANNEL_IDS, DEFAULT_SOCIAL, type SocialLinks } from "@/lib/contact";
+import { copy } from "@/lib/copy";
 import { isUploadedUrl } from "./media";
 import { UserError } from "./poster";
 
@@ -15,6 +17,21 @@ const image = (v: unknown, label: string) => {
   if (!/^\/(images|logo)\/[\w-]+(\/[\w-]+)*\.(webp|png|jpe?g|gif|avif)$/.test(s) && !isUploadedUrl(s, "appearance")) throw new UserError(`${label}ต้องเป็นรูปในเว็บหรือรูปที่อัปโหลดผ่านระบบ`);
   return s;
 };
+/** ลิงก์โซเชียล: ว่างได้ / ต้องเป็น https และไม่เกิน 300 ตัวอักษร (ไม่ใส่ https:// มา → เติมให้) */
+export function parseSocial(raw: unknown): SocialLinks {
+  const r = { ...DEFAULT_SOCIAL, ...((raw ?? {}) as Record<string, unknown>) };
+  return Object.fromEntries(CONTACT_CHANNEL_IDS.map((id) => {
+    let s = typeof r[id] === "string" ? (r[id] as string).trim() : "";
+    if (!s) return [id, ""];
+    const name = copy.dock.channels[id];
+    if (!/^[a-z][a-z\d+.-]*:/i.test(s)) s = `https://${s.replace(/^\/+/, "")}`;
+    let url: URL;
+    try { url = new URL(s); } catch { throw new UserError(`ลิงก์ ${name} ไม่ถูกต้อง`); }
+    if (url.protocol !== "https:" || !url.hostname.includes(".") || s.length > 300 || /[\s<>"']/.test(s)) throw new UserError(`ลิงก์ ${name} ต้องขึ้นต้นด้วย https:// และยาวไม่เกิน 300 ตัวอักษร`);
+    return [id, url.toString()];
+  })) as SocialLinks;
+}
+
 export function parseAppearance(raw: unknown): Appearance {
   const r = (raw ?? {}) as Record<string, unknown>;
   // ค่าที่บันทึกก่อนมีช่องใหม่ → เติมด้วยค่าเริ่มต้น (ไม่ทำให้ค่าเดิมหาย)
@@ -43,6 +60,7 @@ export function parseAppearance(raw: unknown): Appearance {
       if (typeof sections[key] !== "boolean") throw new UserError("ข้อมูลส่วนแสดงหน้าแรกไม่ถูกต้อง");
       return [key, sections[key]];
     })) as Appearance["sections"],
+    social: parseSocial(r.social),
     watermark: { enabled: wm.enabled !== false, mode: wm.mode === "image" ? "image" : "text", text: wmText, image: image(wm.image, "รูปลายน้ำ"), opacity: pct(wm.opacity, "ความเข้มลายน้ำ", 5, 90), size: pct(wm.size, "ขนาดลายน้ำ", 50, 200) },
   };
 }

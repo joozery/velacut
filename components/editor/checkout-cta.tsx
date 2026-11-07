@@ -4,14 +4,13 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CheckCircle2, Download, ImagePlus, Loader2, LogIn, Wallet } from "lucide-react";
+import { CheckCircle2, Download, FileImage, ImagePlus, Loader2, LogIn, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BRAND_NAME, copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
 import type { GameSlug } from "@/lib/games";
 import { fmt } from "@/lib/utils";
-import { toast } from "@/stores/toast-store";
 import { useCheckout } from "./checkout-step";
 import { PosterPreview } from "./poster-preview";
 import { DEFAULT_DECORATION, useGameEditor } from "@/stores/editor-store";
@@ -30,6 +29,7 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
   const [error, setError] = useState("");
   const [file, setFile] = useState<{ blob: Blob; name: string } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [done, setDone] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const locked = useRef(false);
   const { doc } = useGameEditor(game);
@@ -95,8 +95,7 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
       const name = `velacut-${game}-${ref.slice(-8)}${free ? "-watermark" : ""}.png`;
       setFile({ blob, name });
       savePoster(blob, name);
-      setOpen(false);
-      toast({ title: "สร้างป้ายสำเร็จ", description: k.loggedIn ? "ดาวน์โหลด PNG แล้ว ดาวน์โหลดซ้ำได้ที่หน้า \"ป้ายของฉัน\"" : "ดาวน์โหลด PNG แล้ว", variant: "success" });
+      setDone(true);
     } catch (e) {
       console.error("[poster-export]", e, e instanceof Event ? (e.target as HTMLImageElement | null)?.src?.slice(0, 120) : "");
       setError(e instanceof Error ? e.message : "ดาวน์โหลดไม่สำเร็จ กรุณาลองใหม่");
@@ -109,19 +108,41 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
 
   return (
     <>
-      <Button className="rounded-xl px-3 text-xs sm:px-5 sm:text-sm" disabled={disabled || busy} onClick={() => { setError(""); setOpen(true); }}>
+      <Button className="rounded-xl px-3 text-xs sm:px-5 sm:text-sm" disabled={disabled || busy} onClick={() => { setError(""); setDone(false); setOpen(true); }}>
         <Download aria-hidden />
         {k.paid ? "ดาวน์โหลดอีกครั้ง" : free ? c.payFree : c.payClean}
       </Button>
       <Dialog open={open} onOpenChange={(value) => { if (!busy) setOpen(value); }}>
         <DialogContent onEscapeKeyDown={(e) => { if (busy) e.preventDefault(); }} onPointerDownOutside={(e) => { if (busy) e.preventDefault(); }}>
+          {done && file ? (
+            <>
+              <div className="flex flex-col items-center gap-3 pt-2 text-center">
+                <span className="grid size-14 place-items-center rounded-full bg-success-soft text-success"><CheckCircle2 className="size-7" aria-hidden /></span>
+                <DialogHeader className="items-center text-center">
+                  <DialogTitle>ดาวน์โหลดป้ายสำเร็จ</DialogTitle>
+                  <DialogDescription>
+                    {k.loggedIn ? "บันทึกไฟล์ PNG แล้ว ป้ายนี้ถูกเก็บไว้ที่หน้า \"ป้ายของฉัน\" ดาวน์โหลดซ้ำได้ฟรีทุกเมื่อ" : "บันทึกไฟล์ PNG แล้ว เข้าสู่ระบบเพื่อเก็บป้ายไว้ดาวน์โหลดซ้ำ"}
+                  </DialogDescription>
+                </DialogHeader>
+                <p className="max-w-full truncate rounded-lg bg-surface-2 px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{file.name}</p>
+              </div>
+              <DialogFooter className="gap-2 sm:justify-center">
+                <Button variant="outline" onClick={() => savePoster(file.blob, file.name)}><Download aria-hidden />บันทึกไฟล์อีกครั้ง</Button>
+                {k.loggedIn ? (
+                  <Button asChild><Link href="/posters" onClick={() => setOpen(false)}><FileImage aria-hidden />ไปที่ป้ายของฉัน</Link></Button>
+                ) : (
+                  <DialogClose asChild><Button>ปิด</Button></DialogClose>
+                )}
+              </DialogFooter>
+            </>
+          ) : (<>
           <DialogHeader>
             <DialogTitle>{free ? c.confirmFreeTitle : c.confirmTitle}</DialogTitle>
             <DialogDescription>
               {free ? fmt(c.confirmFreeDesc, { brand: BRAND_NAME }) : fmt(c.confirmDesc, { n: formatCoinsFixed(k.total) })}
             </DialogDescription>
           </DialogHeader>
-          <p className="text-xs leading-5 text-muted-foreground">ป้ายเดิมดาวน์โหลดซ้ำได้ฟรีที่หน้าประวัติ</p>
+          <p className="text-xs leading-5 text-muted-foreground">ป้ายเดิมดาวน์โหลดซ้ำได้ฟรีที่หน้าป้ายของฉัน</p>
           {!free && (
             <dl className="grid gap-1.5 rounded-2xl bg-surface-2 p-4 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">{c.balance}</dt><dd className="tabular-nums">{formatCoinsFixed(k.balance)}</dd></div>
@@ -131,13 +152,13 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
           )}
           {busy && <p role="status" className="flex items-center gap-2 text-sm text-primary"><Loader2 className="size-4 animate-spin" />กำลังสร้างไฟล์ PNG…</p>}
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-          {file && !busy && <Button variant="outline" onClick={() => savePoster(file.blob, file.name)}><CheckCircle2 />บันทึกไฟล์อีกครั้ง</Button>}
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" disabled={busy}>{copy.common.cancel}</Button>
             </DialogClose>
             <Button onClick={confirm} disabled={busy}>{busy ? <Loader2 className="animate-spin" /> : <Download />}{busy ? "กำลังสร้างภาพ" : k.paid ? "ดาวน์โหลดซ้ำฟรี" : c.confirm}</Button>
           </DialogFooter>
+          </>)}
         </DialogContent>
       </Dialog>
       {exporting && createPortal(<div aria-hidden className="pointer-events-none fixed top-0 left-[-20000px] w-[1080px]" ref={exportRef}><PosterPreview game={game} skinIds={doc.skins} cols={viewCols} template={doc.template} decoration={{ ...DEFAULT_DECORATION, ...doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}

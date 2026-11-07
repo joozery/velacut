@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, CalendarCheck, ChartNoAxesCombined, Coins, CreditCard, Images, LayoutDashboard, LayoutTemplate, ListOrdered, LogOut, Megaphone, Paintbrush, QrCode, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, CalendarCheck, ChartNoAxesCombined, Coins, CreditCard, Images, LayoutDashboard, LayoutTemplate, ListOrdered, LogOut, Megaphone, Paintbrush, QrCode, Share2, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/settings", label: "ตั้งค่าเครดิต", icon: Coins },
   { href: "/admin/templates", label: "เทมเพลตป้าย", icon: LayoutTemplate },
   { href: "/admin/appearance", label: "ตกแต่งหน้าบ้าน", icon: Paintbrush },
+  { href: "/admin/appearance?tab=social", label: "โซเชียลมีเดีย", icon: Share2 },
   { href: "/admin/library", label: "คลังฮีโร่และสกิน", icon: Images },
   { href: "/admin/payments", label: "ช่องทางชำระเงิน", icon: CreditCard },
   { href: "/admin/promo", label: "โปรโมชัน", icon: Megaphone },
@@ -24,10 +25,11 @@ const NAV = [
 
 export function AdminNav({ pending, vertical = false }: { pending: number; vertical?: boolean }) {
   const pathname = usePathname();
+  const social = useSearchParams().get("tab") === "social";
   return (
     <nav aria-label="เมนูผู้ดูแล" className={cn("flex gap-1", vertical ? "flex-col" : "no-scrollbar overflow-x-auto lg:flex-col")}>
       {NAV.map(({ href, label, icon: Icon, exact }) => {
-        const active = exact ? pathname === href : pathname.startsWith(href);
+        const active = href.includes("?") ? pathname === href.split("?")[0] && social : exact ? pathname === href : pathname.startsWith(href) && !(href === "/admin/appearance" && social);
         return (
           <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cn("flex h-10 shrink-0 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-colors", active ? "bg-primary-soft text-primary-soft-foreground" : "text-muted-foreground hover:bg-surface-2 hover:text-foreground")}>
             <Icon className="size-4" aria-hidden />

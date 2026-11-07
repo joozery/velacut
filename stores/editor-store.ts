@@ -54,7 +54,7 @@ export type GameEditorState = {
 const HISTORY_LIMIT = 50;
 export const DEFAULT_VIEW_COLS = 6;
 export const VIEW_COLS_MIN = 2;
-export const VIEW_COLS_MAX = 10;
+export const VIEW_COLS_MAX = 16;
 
 const EMPTY_DOC: EditorDoc = { skins: [], cols: null, template: "none" };
 export const EMPTY_GAME_STATE: GameEditorState = { doc: EMPTY_DOC, past: [], future: [], viewCols: DEFAULT_VIEW_COLS };

@@ -44,7 +44,7 @@ export default async function AdminUserDetail({ params, searchParams }: { params
             </dl>
           </Card>
         </div>
-        <Card className="p-4 sm:p-5"><h2 className="text-sm font-semibold">ปรับยอดเครดิต</h2><p className="mt-1 text-xs text-muted-foreground">ใช้ชดเชย/แก้ไขยอด — ผู้ใช้จะเห็นในประวัติพร้อมเหตุผล</p><AdjustWalletForm userId={user.id} /></Card>
+        <Card className="p-4 sm:p-5"><h2 id="adjust" className="text-sm font-semibold">เพิ่ม / หักเครดิต</h2><p className="mt-1 text-xs text-muted-foreground">ใช้ชดเชย/แก้ไขยอด — ผู้ใช้จะเห็นในประวัติพร้อมเหตุผล</p><AdjustWalletForm userId={user.id} wallet={user.wallet} /></Card>
       </div>
 
       <Card className="mt-6 overflow-hidden">

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { copy } from "./copy";
+import { DEFAULT_SOCIAL, type SocialLinks } from "./contact";
 
 export const HOME_SECTIONS = [
   ["stats", "สถิติเบื้องต้น"], ["showcase", "ตัวอย่างป้าย"], ["features", "จุดเด่น"],
@@ -21,6 +22,8 @@ export type Appearance = {
   sections: Record<HomeSection, boolean>;
   /** ลายน้ำบนภาพสกินที่ผู้ใช้เลือก (ตารางจัดสกิน + ป้ายตัวอย่าง) — ไฟล์ที่ชำระแล้วไม่มีลายน้ำนี้ */
   watermark: SkinWatermark;
+  /** ลิงก์โซเชียล/ช่องทางติดต่อ — ว่าง = ไม่แสดงช่องทางนั้น */
+  social: SocialLinks;
 };
 export type SkinWatermark = {
   enabled: boolean;
@@ -45,6 +48,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   footerAbout: copy.footer.about,
   sections: { stats: true, showcase: true, features: true, steps: true, pricing: true, faq: true, finalCta: true },
   watermark: DEFAULT_WATERMARK,
+  social: DEFAULT_SOCIAL,
 };
 
 /** Choose readable button text for light and dark brand colors. */

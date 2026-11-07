@@ -91,7 +91,7 @@ export const copy = {
     contactClose: "ปิดช่องทางติดต่อ",
     contactMenu: "ช่องทางติดต่อทีมงาน",
     contactNotSet: "ยังไม่ได้ตั้งค่าลิงก์ {name}",
-    contactNotSetDesc: "ตั้งค่าได้ที่ NEXT_PUBLIC_CONTACT_* ในไฟล์ .env",
+    contactNotSetDesc: "แอดมินตั้งค่าได้ที่หลังบ้าน > ตกแต่งหน้าบ้าน > โซเชียล",
     channels: {
       line: "LINE",
       messenger: "Messenger",

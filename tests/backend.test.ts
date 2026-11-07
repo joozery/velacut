@@ -814,3 +814,21 @@ test("template B: requires the customer's own uploaded banner", async () => {
   // รูปจากโฟลเดอร์อื่นของเราไม่นับเป็นแบนเนอร์
   assert.throws(() => m.poster.parsePosterInput("mlbb", b(`${base}/promo/2026/11/${crypto.randomUUID()}.webp`), 6), /แบนเนอร์/);
 });
+
+test("appearance: social links accept https only and normalize bare domains", async () => {
+  const { DEFAULT_APPEARANCE } = await import("../lib/appearance");
+  const { parseAppearance, parseSocial } = await import("../lib/server/appearance");
+  const social = parseSocial({ line: "line.me/R/ti/p/@velacut", messenger: "", facebook: "https://facebook.com/velacut", tiktok: "  " });
+  assert.equal(social.line, "https://line.me/R/ti/p/@velacut");
+  assert.equal(social.facebook, "https://facebook.com/velacut");
+  assert.equal(social.messenger, "");
+  assert.equal(social.tiktok, "");
+  for (const bad of ["javascript:alert(1)", "http://facebook.com/x", "https://localhost", `https://x.com/${"a".repeat(300)}`, "data:text/html,hi"]) {
+    assert.throws(() => parseSocial({ facebook: bad }), /Facebook/, bad);
+  }
+  const saved = parseAppearance({ ...DEFAULT_APPEARANCE, social: { ...DEFAULT_APPEARANCE.social, tiktok: "https://www.tiktok.com/@velacut" } });
+  assert.equal(saved.social.tiktok, "https://www.tiktok.com/@velacut");
+  // ค่าที่บันทึกก่อนมีโซเชียล → ไม่พัง ใช้ค่าเริ่มต้น
+  const { social: _drop, ...legacy } = DEFAULT_APPEARANCE;
+  assert.deepEqual(parseAppearance(legacy).social, DEFAULT_APPEARANCE.social);
+});

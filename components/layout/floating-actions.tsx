@@ -11,7 +11,8 @@ import { DailyRewardDialog } from "./daily-reward-dialog";
 import { copy } from "@/lib/copy";
 import { formatCoins } from "@/lib/format";
 import type { DailyConfig } from "@/lib/daily";
-import { CONTACT_CHANNELS, type ContactChannel } from "@/lib/contact";
+import { contactChannels, type ContactChannel } from "@/lib/contact";
+import { useAppearance } from "@/components/shared/appearance-provider";
 import { toast } from "@/stores/toast-store";
 import { cn, fmt } from "@/lib/utils";
 import { nextRewardDay, useDaily } from "@/stores/account-store";
@@ -42,7 +43,7 @@ function useHideOnScrollDown() {
 }
 
 /** ปุ่มช่องทางติดต่อ 1 ปุ่ม (สไลด์ออกจากปุ่มแชท) */
-function ChannelButton({ ch, index, onDone }: { ch: ContactChannel; index: number; onDone: () => void }) {
+function ChannelButton({ ch, index, total, onDone }: { ch: ContactChannel; index: number; total: number; onDone: () => void }) {
   const name = copy.dock.channels[ch.id];
   const cls =
     "grid size-11 place-items-center rounded-full border border-border bg-white shadow-soft-lg transition-transform hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -53,7 +54,7 @@ function ChannelButton({ ch, index, onDone }: { ch: ContactChannel; index: numbe
     <m.li
       initial={{ opacity: 0, y: 24, scale: 0.6 }}
       animate={{ opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 520, damping: 30, delay: index * 0.045 } }}
-      exit={{ opacity: 0, y: 24, scale: 0.6, transition: { duration: 0.14, delay: (CONTACT_CHANNELS.length - 1 - index) * 0.025 } }}
+      exit={{ opacity: 0, y: 24, scale: 0.6, transition: { duration: 0.14, delay: (total - 1 - index) * 0.025 } }}
     >
       <Tooltip content={name} side="left">
         {ch.href ? (
@@ -67,7 +68,7 @@ function ChannelButton({ ch, index, onDone }: { ch: ContactChannel; index: numbe
             {icon}
           </Link>
         ) : (
-          // ยังไม่ได้ตั้งค่าลิงก์ใน env — แจ้งเตือนแทนการพาไปหน้าว่าง
+          // ยังไม่ได้ตั้งค่าลิงก์ในหลังบ้าน — แจ้งเตือนแทนการพาไปหน้าว่าง
           <button
             type="button"
             aria-label={name}
@@ -85,6 +86,10 @@ function ChannelButton({ ch, index, onDone }: { ch: ContactChannel; index: numbe
 /** dock ทางลัดมุมขวาล่าง: รางวัลรายวัน + แชทซัพพอร์ต */
 export function FloatingActions({ daily }: { daily: DailyConfig }) {
   const pathname = usePathname();
+  const site = useAppearance();
+  // แสดงเฉพาะช่องทางที่ตั้งลิงก์ไว้ — ถ้ายังไม่ตั้งเลยสักช่อง แสดงทั้งหมดพร้อมแจ้งว่ายังไม่ได้ตั้งค่า
+  const configured = contactChannels(site.social).filter((ch) => ch.href);
+  const channels = configured.length ? configured : contactChannels(site.social);
   const [heroActionsVisible, setHeroActionsVisible] = useState(false);
   const { claimed, claimedToday } = useDaily();
   const [rewardOpen, setRewardOpen] = useState(false);
@@ -267,8 +272,8 @@ export function FloatingActions({ daily }: { daily: DailyConfig }) {
               aria-label={copy.dock.contactMenu}
               className="absolute bottom-full left-1/2 mb-2 flex -translate-x-1/2 flex-col-reverse items-center gap-2"
             >
-              {CONTACT_CHANNELS.map((ch, i) => (
-                <ChannelButton key={ch.id} ch={ch} index={i} onDone={() => setContactOpen(false)} />
+              {channels.map((ch, i) => (
+                <ChannelButton key={ch.id} ch={ch} index={i} total={channels.length} onDone={() => setContactOpen(false)} />
               ))}
             </m.ul>
           )}

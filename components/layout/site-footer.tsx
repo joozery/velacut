@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUp, ArrowUpRight, BookOpen, CircleHelp, Gamepad2, History, House, MessageCircle, UserRound, Wallet, FileImage } from "lucide-react";
 import { GameIcon } from "@/components/shared/game-icon";
 import { copy } from "@/lib/copy";
-import { CONTACT_CHANNELS } from "@/lib/contact";
+import { contactChannels } from "@/lib/contact";
 import { DEFAULT_GAME, GAMES } from "@/lib/games";
 import { fmt } from "@/lib/utils";
 import { getAppearanceSafe } from "@/lib/server/appearance";
@@ -29,7 +29,7 @@ export async function SiteFooter() {
       { href: "/chat", label: c.contact, icon: MessageCircle },
     ] },
   ].map(group => ({ ...group, items: group.items.filter(item => item.href === "/#pricing" ? site.sections.pricing : item.href === "/#steps" ? site.sections.steps : item.href === "/#faq" ? site.sections.faq : true) }));
-  const channels = CONTACT_CHANNELS.filter((channel) => channel.href);
+  const channels = contactChannels(site.social).filter((channel) => channel.href);
 
   return (
     <footer className="relative isolate overflow-hidden bg-[#06152f] text-white">

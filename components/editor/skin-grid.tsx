@@ -121,7 +121,7 @@ export function SkinGrid({ game, skins, viewCols }: { game: GameSlug; skins: str
       accessibility={{ announcements, screenReaderInstructions: { draggable: g.dndInstructions } }}
     >
       <SortableContext items={skins} strategy={rectSortingStrategy}>
-        <ul className="grid w-full gap-2.5 sm:gap-4" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        <ul className={cn("grid w-full", cols > 10 ? "gap-1.5 sm:gap-2" : "gap-2.5 sm:gap-4")} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
           {skins.map((id, i) => {
             const skin = skinById.get(id);
             if (!skin) return null;

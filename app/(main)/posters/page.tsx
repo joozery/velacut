@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight, FileImage, Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { PosterCard } from "@/components/posters/poster-card";
+import { PostersTable } from "@/components/posters/posters-table";
+import { formatCoinsFixed } from "@/lib/format";
 import { DEFAULT_GAME } from "@/lib/games";
 import { listPosters } from "@/lib/server/account";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "ป้ายของฉัน" };
 export default async function PostersPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const user = (await auth())?.user;
   if (!user?.id) redirect("/login?callbackUrl=%2Fposters");
-  const { posters, total, page, pages } = await listPosters(user.id, (await searchParams).page);
+  const { posters, total, page, pages, summary } = await listPosters(user.id, (await searchParams).page);
   const href = (p: number) => (p > 1 ? `/posters?page=${p}` : "/posters");
   return (
     <div className="bg-background">
@@ -37,7 +38,19 @@ export default async function PostersPage({ searchParams }: { searchParams: Prom
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{posters.map((o) => <PosterCard key={o.id} order={o} />)}</div>
+            <dl className="mb-4 grid grid-cols-3 gap-3">
+              {[
+                { label: "ป้ายทั้งหมด", value: total.toLocaleString("th-TH"), unit: "ใบ" },
+                { label: "ไม่มีลายน้ำ / มีลายน้ำ", value: `${summary.clean.toLocaleString("th-TH")} / ${summary.watermark.toLocaleString("th-TH")}`, unit: "ใบ" },
+                { label: "ใช้เครดิตไปแล้ว", value: formatCoinsFixed(summary.spent), unit: "เครดิต" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-2xl border border-border bg-surface px-4 py-3">
+                  <dt className="truncate text-[11px] text-muted-foreground">{s.label}</dt>
+                  <dd className="mt-1 text-lg font-bold tabular-nums sm:text-xl">{s.value} <span className="text-xs font-normal text-muted-foreground">{s.unit}</span></dd>
+                </div>
+              ))}
+            </dl>
+            <PostersTable posters={posters} />
             {pages > 1 && (
               <nav aria-label="เปลี่ยนหน้า" className="mt-8 flex items-center justify-center gap-2 text-sm">
                 {page > 1 ? <Link href={href(page - 1)} aria-label="หน้าก่อนหน้า" className="grid size-10 place-items-center rounded-xl border border-border bg-surface hover:bg-surface-2"><ChevronLeft className="size-4" /></Link> : <span className="grid size-10 place-items-center rounded-xl border border-border opacity-40"><ChevronLeft className="size-4" /></span>}

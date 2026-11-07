@@ -4,7 +4,7 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight, Droplets, ImageUp, LayoutTemplate, Loader2, Palette, RotateCcw, Save, Type } from "lucide-react";
+import { ArrowUpRight, Droplets, ExternalLink, ImageUp, LayoutTemplate, Loader2, Palette, RotateCcw, Save, Share2, Type, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card } from "./ui";
@@ -16,6 +16,8 @@ import { SkinThumb } from "@/components/shared/skin-thumb";
 import { SkinWatermarkOverlay } from "@/components/shared/skin-watermark";
 import { getCatalog } from "@/lib/catalog";
 import type { SkinWatermark } from "@/lib/appearance";
+import { CONTACT_CHANNEL_IDS, SOCIAL_PLACEHOLDER, type ContactChannelId } from "@/lib/contact";
+import { copy } from "@/lib/copy";
 
 const SAMPLE = [...getCatalog("mlbb").skins].sort((a, b) => b.tierRank - a.tierRank).slice(0, 3);
 
@@ -46,7 +48,7 @@ function ImageField({ label, value, onChange, uploadReady, disabled }: { label: 
   return <div className="grid gap-2"><span className="text-xs font-medium">{label}</span><div className="flex flex-wrap items-center gap-3"><div className="grid h-20 w-36 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-surface-2 p-2"><img src={value} alt={label} className="max-h-full max-w-full object-contain" /></div><div><input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" className="hidden" aria-label={`อัปโหลด${label}`} disabled={!uploadReady || disabled || busy} onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} /><Button type="button" variant="outline" size="sm" disabled={!uploadReady || disabled || busy} onClick={() => input.current?.click()}>{busy ? <Loader2 className="animate-spin" aria-hidden /> : <ImageUp aria-hidden />}{busy ? "กำลังอัปโหลด…" : "เปลี่ยนรูป"}</Button><p className="mt-2 max-w-xs text-[11px] leading-5 text-muted-foreground">PNG / JPG / WEBP ไม่เกิน 8 MB · อัปโหลดแล้วกดบันทึกเพื่อใช้งาน</p></div></div>{error && <p role="alert" className="text-xs text-danger">{error}</p>}</div>;
 }
 
-const tabs = [{ id: "brand", label: "แบรนด์และสี", icon: Palette }, { id: "hero", label: "ส่วนบนหน้าแรก", icon: Type }, { id: "sections", label: "ส่วนที่แสดง", icon: LayoutTemplate }, { id: "watermark", label: "ลายน้ำ", icon: Droplets }] as const;
+const tabs = [{ id: "brand", label: "แบรนด์และสี", icon: Palette }, { id: "hero", label: "ส่วนบนหน้าแรก", icon: Type }, { id: "sections", label: "ส่วนที่แสดง", icon: LayoutTemplate }, { id: "watermark", label: "ลายน้ำ", icon: Droplets }, { id: "social", label: "โซเชียล", icon: Share2 }] as const;
 const wordmarkImages = [
   ["/images/hero-cover-create-v1.webp", "สกินโทนน้ำเงิน"],
   ["/images/hero-cover-library-v1.webp", "คลังสกิน"],
@@ -71,10 +73,18 @@ function WordmarkPreview({ name, image, animate, bare = false }: { name: string;
   );
 }
 
-export function AppearanceForm({ initial, uploadReady }: { initial: Appearance; uploadReady: boolean }) {
+const SOCIAL_HINT: Record<ContactChannelId, string> = {
+  line: "ลิงก์เพิ่มเพื่อน LINE OA เช่น line.me/R/ti/p/@yourid",
+  messenger: "ลิงก์แชท Messenger ของเพจ เช่น m.me/yourpage",
+  facebook: "ลิงก์เพจ Facebook",
+  tiktok: "ลิงก์โปรไฟล์ TikTok เช่น tiktok.com/@yourid",
+};
+const looksValid = (s: string) => /^(https:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(s.trim());
+
+export function AppearanceForm({ initial, uploadReady, initialTab }: { initial: Appearance; uploadReady: boolean; initialTab?: string }) {
   const [value, setValue] = useState(initial);
   const [saved, setSaved] = useState(initial);
-  const [tab, setTab] = useState<typeof tabs[number]["id"]>("brand");
+  const [tab, setTab] = useState<typeof tabs[number]["id"]>(tabs.find(t => t.id === initialTab)?.id ?? "brand");
   const [previewDark, setPreviewDark] = useState(false);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -83,6 +93,7 @@ export function AppearanceForm({ initial, uploadReady }: { initial: Appearance; 
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const set = <K extends keyof Appearance>(key: K, next: Appearance[K]) => setValue(v => ({ ...v, [key]: next }));
   const wm = (patch: Partial<SkinWatermark>) => setValue(v => ({ ...v, watermark: { ...v.watermark, ...patch } }));
+  const social = (id: ContactChannelId, url: string) => setValue(v => ({ ...v, social: { ...v.social, [id]: url } }));
   const hero = (patch: Partial<Appearance["hero"]>) => setValue(v => ({ ...v, hero: { ...v.hero, ...patch } }));
   const save = () => start(async () => {
     setError("");
@@ -124,6 +135,29 @@ export function AppearanceForm({ initial, uploadReady }: { initial: Appearance; 
           {tab === "sections" && <>
             <Card className="overflow-hidden"><div className="border-b border-border p-5"><h2 className="text-sm font-semibold">ส่วนที่แสดงบนหน้าแรก</h2><p className="mt-1 text-xs text-muted-foreground">เปิดเฉพาะส่วนที่ต้องการให้ผู้ใช้เห็น</p></div><div className="divide-y divide-border">{HOME_SECTIONS.map(([key,label]) => <label key={key} className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4"><span className="text-sm">{label}</span><input type="checkbox" checked={value.sections[key]} onChange={e => set("sections", { ...value.sections, [key]: e.target.checked })} className="size-4 accent-primary" /></label>)}</div></Card>
             <Card className="space-y-4 p-5"><h2 className="text-sm font-semibold">ข้อความท้ายเว็บ</h2><Field label="เกี่ยวกับเว็บ">{id => <Textarea id={id} rows={4} value={value.footerAbout} maxLength={300} onChange={e => set("footerAbout", e.target.value)} />}</Field><div className="flex flex-wrap gap-4 text-xs"><Link href="/admin/promo" className="text-primary hover:underline">ตั้งค่าแถบประกาศและโปรโมชัน ↗</Link><Link href="/admin/daily" className="text-primary hover:underline">ตั้งค่าเช็กอิน ↗</Link></div></Card>
+          </>}
+          {tab === "social" && <>
+            <Card className="overflow-hidden">
+              <div className="border-b border-border p-5"><h2 className="text-sm font-semibold">ลิงก์โซเชียลและช่องทางติดต่อ</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">แสดงในปุ่มแชทมุมขวาล่างและท้ายเว็บ · เว้นว่าง = ไม่แสดงช่องทางนั้น</p></div>
+              <div className="divide-y divide-border">{CONTACT_CHANNEL_IDS.map(id => {
+                const url = value.social[id];
+                const bad = url.trim() !== "" && !looksValid(url);
+                const href = url.trim() ? (/^https:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`) : "";
+                return <div key={id} className="flex items-start gap-3 px-5 py-4">
+                  <span className="mt-6 grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-white"><img src={`/social/${id}.svg`} alt="" className="size-6" /></span>
+                  <div className="min-w-0 flex-1"><Field label={copy.dock.channels[id]}>{fid => <>
+                    <div className="flex gap-2"><Input id={fid} value={url} maxLength={300} inputMode="url" placeholder={SOCIAL_PLACEHOLDER[id]} aria-invalid={bad || undefined} onChange={e => social(id, e.target.value)} className={cn("min-w-0 flex-1", bad && "border-danger")} />
+                      {url && <button type="button" onClick={() => social(id, "")} aria-label={`ล้างลิงก์ ${copy.dock.channels[id]}`} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground hover:bg-surface-2"><X className="size-4" aria-hidden /></button>}
+                      {href && !bad && <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`ทดสอบเปิดลิงก์ ${copy.dock.channels[id]}`} title="ทดสอบเปิดลิงก์" className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground hover:bg-surface-2 hover:text-primary"><ExternalLink className="size-4" aria-hidden /></a>}
+                    </div>
+                    <p className={cn("mt-1 text-[11px]", bad ? "text-danger" : "text-muted-foreground")}>{bad ? "ลิงก์ดูไม่ถูกต้อง — ต้องเป็นลิงก์ https://" : url ? <span className="text-success">แสดงบนเว็บ</span> : SOCIAL_HINT[id]}</p>
+                  </>}</Field></div>
+                </div>;
+              })}</div>
+            </Card>
+            <Card className="space-y-3 p-5"><h2 className="text-sm font-semibold">ตัวอย่างท้ายเว็บ</h2>
+              <div className="flex min-h-14 items-center gap-2 rounded-xl bg-[#06152f] px-4">{CONTACT_CHANNEL_IDS.filter(id => value.social[id].trim()).map(id => <span key={id} className="grid size-9 place-items-center rounded-full border border-white/15 bg-white/5"><img src={`/social/${id}.svg`} alt={copy.dock.channels[id]} className="size-[18px]" /></span>)}{!CONTACT_CHANNEL_IDS.some(id => value.social[id].trim()) && <span className="text-xs text-white/60">ยังไม่มีช่องทางที่ตั้งลิงก์ไว้ — ท้ายเว็บจะไม่แสดงไอคอนโซเชียล</span>}</div>
+            </Card>
           </>}
           {tab === "watermark" && <>
             <Card className="space-y-4 p-5">

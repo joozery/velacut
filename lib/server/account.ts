@@ -49,6 +49,13 @@ export async function listPosters(userId: string, rawPage: unknown) {
   const total = await txs.countDocuments(filter);
   const pages = Math.max(1, Math.ceil(total / POSTERS_PAGE_SIZE));
   const page = Math.min(pages, Math.max(1, Math.floor(Number(rawPage)) || 1));
-  const docs = await txs.find(filter).sort({ createdAt: -1 }).skip((page - 1) * POSTERS_PAGE_SIZE).limit(POSTERS_PAGE_SIZE).toArray();
-  return { posters: docs.filter((t) => t.poster).map(toPosterOrder), total, page, pages };
+  const [docs, agg] = await Promise.all([
+    txs.find(filter).sort({ createdAt: -1 }).skip((page - 1) * POSTERS_PAGE_SIZE).limit(POSTERS_PAGE_SIZE).toArray(),
+    txs.aggregate<{ spent: number; watermark: number }>([
+      { $match: filter },
+      { $group: { _id: null, spent: { $sum: "$amount" }, watermark: { $sum: { $cond: [{ $eq: ["$poster.doc.output", "watermark"] }, 1, 0] } } } },
+    ]).toArray(),
+  ]);
+  const summary = { spent: fromUnits(-(agg[0]?.spent ?? 0)), watermark: agg[0]?.watermark ?? 0, clean: total - (agg[0]?.watermark ?? 0) };
+  return { posters: docs.filter((t) => t.poster).map(toPosterOrder), total, page, pages, summary };
 }
