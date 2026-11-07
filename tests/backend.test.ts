@@ -42,7 +42,7 @@ before(async () => {
 
 beforeEach(async () => {
   const db = await m.mongo.getDb();
-  await Promise.all(["users", "wallets", "transactions", "settings", "slip_images", "daily_activity"].map((c) => db.collection(c).deleteMany({})));
+  await Promise.all(["users", "wallets", "transactions", "settings", "slip_images", "daily_activity", "catalog_heroes", "catalog_skins"].map((c) => db.collection(c).deleteMany({})));
   alice = (await m.users.createPasswordUser({ name: "Alice", email: A, password: "velcut-test-123" })).id;
   bob = (await m.users.createPasswordUser({ name: "Bob", email: B, password: "velcut-test-123" })).id;
 });
@@ -653,4 +653,67 @@ test("transfer: concurrent different transfers cannot overdraw the sender", asyn
   assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
   assert.deepEqual(await balance(alice), { transferable: 3, bonus: 20, balance: 23 });
   assert.equal((await balance(bob)).balance, 7);
+});
+
+test("library: admin uploads add heroes and skins accepted by poster checkout", async () => {
+  const { saveLibraryItem, getServerCatalog, listLibrary, libraryImage } = await import("../lib/server/catalog");
+  const previous = process.env.R2_PUBLIC_URL;
+  process.env.R2_PUBLIC_URL = "https://cdn.velcut.test";
+  try {
+    const image = "https://cdn.velcut.test/catalog/2026/11/0b6c6a4e-8a63-4f43-9a35-2f3f7c3f1f0e.webp";
+    await saveLibraryItem("hero", { id: "custom-test-hero", name: "Uploaded Hero", image, active: true }, A);
+    await saveLibraryItem("skin", { id: "mlbb-custom-test-skin", heroId: "custom-test-hero", name: "Uploaded Skin", tier: "Grand", image, active: true, label: "Test Series" }, A);
+    const catalog = await getServerCatalog();
+    assert.ok(catalog.heroById.has("custom-test-hero"));
+    assert.ok(catalog.heroes.some(h => h.id === "custom-test-hero"));
+    const skin = catalog.skinById.get("mlbb-custom-test-skin")!;
+    assert.equal(skin.heroName, "Uploaded Hero");
+    assert.equal(skin.label, "Test Series");
+    assert.match(skin.image, /^\/api\/catalog\/images\/skin\/mlbb-custom-test-skin\?v=/);
+    assert.equal(await libraryImage("skin", skin.id), image);
+    assert.equal(await libraryImage("other", skin.id), null);
+    const input = { ...doc("watermark"), skins: [skin.id, ...doc().skins.slice(0, 11)] };
+    assert.throws(() => m.poster.parsePosterInput("mlbb", input, 4), /สกิน/);
+    const validated = m.poster.parsePosterInput("mlbb", input, 4, catalog);
+    const order = await m.poster.purchasePoster(alice, validated);
+    assert.ok(order.doc.skins.includes(skin.id));
+    const listing = await listLibrary({ q: "Uploaded", kind: "skin" });
+    assert.equal(listing.rows.length, 1);
+    assert.equal(listing.rows[0].uploaded, true);
+  } finally { if (previous === undefined) delete process.env.R2_PUBLIC_URL; else process.env.R2_PUBLIC_URL = previous; }
+});
+
+test("library: replacing images preserves IDs and hidden records remain available for old posters", async () => {
+  const { saveLibraryItem, getServerCatalog } = await import("../lib/server/catalog");
+  const old = m.catalog.getCatalog("mlbb").skins[0];
+  const previous = process.env.R2_PUBLIC_URL;
+  process.env.R2_PUBLIC_URL = "https://cdn.velcut.test";
+  try {
+    const image = "https://cdn.velcut.test/catalog/2026/11/0b6c6a4e-8a63-4f43-9a35-2f3f7c3f1f0e.webp";
+    await saveLibraryItem("skin", { id: old.id, heroId: old.heroId, name: "Replacement", tier: old.tier, image, active: true }, A);
+    let catalog = await getServerCatalog();
+    assert.equal(catalog.skinById.get(old.id)?.name, "Replacement");
+    assert.ok(catalog.skins.some(s => s.id === old.id));
+    assert.match(catalog.skinById.get(old.id)!.image, /\/api\/catalog\/images\/skin\//);
+    await saveLibraryItem("skin", { id: old.id, heroId: old.heroId, name: "Replacement", tier: old.tier, image, active: false }, A);
+    catalog = await getServerCatalog();
+    assert.equal(catalog.skins.some(s => s.id === old.id), false);
+    assert.ok(catalog.skinById.has(old.id));
+    assert.throws(() => m.poster.parsePosterInput("mlbb", doc(), 4, catalog), /สกิน/);
+    // A metadata-only edit keeps the existing local image and does not create a broken proxy URL.
+    const second = m.catalog.getCatalog("mlbb").skins[1];
+    await saveLibraryItem("skin", { id: second.id, heroId: second.heroId, name: "Renamed", tier: second.tier, image: second.image, active: true }, A);
+    assert.equal((await getServerCatalog()).skinById.get(second.id)?.image, second.image);
+  } finally { if (previous === undefined) delete process.env.R2_PUBLIC_URL; else process.env.R2_PUBLIC_URL = previous; }
+});
+
+test("library: rejects untrusted images, invalid tiers and missing heroes", async () => {
+  const { saveLibraryItem } = await import("../lib/server/catalog");
+  const skin = m.catalog.getCatalog("mlbb").skins[0];
+  const input = { id: skin.id, heroId: skin.heroId, name: skin.name, tier: skin.tier, image: skin.image, active: true };
+  await assert.rejects(saveLibraryItem("skin", { ...input, image: "https://evil.test/skin.png" }, A), /อัปโหลด/);
+  await assert.rejects(saveLibraryItem("skin", { ...input, heroId: "missing-hero" }, A), /ไม่พบฮีโร่/);
+  await assert.rejects(saveLibraryItem("skin", { ...input, tier: "invalid-tier" }, A), /ระดับสกิน/);
+  await assert.rejects(saveLibraryItem("skin", { ...input, id: "../private" }, A), /รหัส/);
+  await assert.rejects(saveLibraryItem("hero", { id: "custom-empty", name: "New Hero", active: true }, A), /อัปโหลด/);
 });

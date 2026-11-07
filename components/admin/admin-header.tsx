@@ -15,6 +15,7 @@ import { AdminFooterLinks, AdminNav } from "./admin-nav";
 import { cn } from "@/lib/utils";
 
 const TITLES: [string, string][] = [
+  ["/admin/library", "คลังฮีโร่และสกิน"],
   ["/admin/appearance", "ตกแต่งหน้าบ้าน"],
   ["/admin/finance", "รายงานการเงิน"],
   ["/admin/topups", "คำสั่งเติมเงิน"],

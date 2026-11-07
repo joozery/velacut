@@ -24,7 +24,8 @@ import { HeroLenis } from "./hero-lenis";
 import { PriceCalculator } from "./price-calculator";
 import { CountUp, Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { copy } from "@/lib/copy";
-import { featuredSkins, getCatalog } from "@/lib/catalog";
+import { featuredFromCatalog } from "@/lib/catalog";
+import { getServerCatalogSafe as getServerCatalog } from "@/lib/server/catalog";
 import { GAMES, type GameConfig } from "@/lib/games";
 import { MOCK_STATS } from "@/lib/mock";
 import { cn, fmt } from "@/lib/utils";
@@ -58,29 +59,30 @@ function SectionTitle({ title, highlight, description, className }: { title: str
 }
 
 /** สกินคละระดับสำหรับ demo กริด (เลือกฝั่ง server เพื่อไม่ต้องส่ง catalog ทั้งก้อนไป client) */
-function demoSkins(game: "mlbb", n: number) {
-  const all = getCatalog(game).skins;
+async function demoSkins(n: number) {
+  const all = (await getServerCatalog()).skins;
   const step = Math.max(1, Math.floor(all.length / n));
   return all.filter((_, i) => i % step === 0).slice(0, n);
 }
 
-const catalogStats = (g: GameConfig) => {
+const catalogStats = async (g: GameConfig) => {
   if (g.mode !== "library") return null;
-  const c = getCatalog(g.slug);
-  return { heroes: c.heroes.length, skins: c.skins.length, preview: featuredSkins(c.game, 9) };
+  const c = await getServerCatalog();
+  return { heroes: c.heroes.length, skins: c.skins.length, preview: featuredFromCatalog(c, 9) };
 };
 
 /* ─────────────── Studio introduction ─────────────── */
-export function Hero() {
-  const totalSkins = GAMES.reduce((n, game) => n + (catalogStats(game)?.skins ?? 0), 0);
-  return <HeroLenis totalSkins={totalSkins} previewSkins={featuredSkins("mlbb", 4).map(({ id, image }) => ({ id, image }))} />;
+export async function Hero() {
+  const catalog = await getServerCatalog();
+  const totalSkins = catalog.skins.length;
+  return <HeroLenis totalSkins={totalSkins} previewSkins={featuredFromCatalog(catalog, 4).map(({ id, image }) => ({ id, image }))} />;
 }
 
 /* ─────────────── Stats ─────────────── */
 const STAT_ICONS = { users: "users", posters: "layout-grid", heroes: "swords", skins: "images" } as const;
 
-export function Stats() {
-  const lib = GAMES.map(catalogStats).filter(Boolean) as NonNullable<ReturnType<typeof catalogStats>>[];
+export async function Stats() {
+  const lib = (await Promise.all(GAMES.map(catalogStats))).filter(Boolean) as NonNullable<Awaited<ReturnType<typeof catalogStats>>>[];
   const values: Record<string, number> = {
     users: MOCK_STATS.users,
     posters: MOCK_STATS.posters,
@@ -142,7 +144,6 @@ const MARKERS: { key: CalloutKey; part: "banner" | "grid"; x: number; y: number 
 ];
 
 /** สกินในกริดใต้ป้าย: มือถือ 8 × 2, จอใหญ่ 12 × 2 */
-const SHOWCASE_SKINS = featuredSkins("mlbb", 24, 2);
 
 function ShowcaseMarkers({ part }: { part: "banner" | "grid" }) {
   return (
@@ -162,7 +163,8 @@ function ShowcaseMarkers({ part }: { part: "banner" | "grid" }) {
   );
 }
 
-export function Showcase() {
+export async function Showcase() {
+  const SHOWCASE_SKINS = featuredFromCatalog(await getServerCatalog(), 24, 2);
   const sc = L.showcase;
   return (
     <Section id="showcase" className="overflow-x-clip bg-surface py-8 sm:py-10">
@@ -264,15 +266,15 @@ function MiniPanel({ icon, label, tag, children }: { icon: React.ReactNode; labe
   );
 }
 
-export function Features() {
+export async function Features() {
   const f = L.features;
-  const detected = featuredSkins("mlbb", 4, 4);
+  const detected = featuredFromCatalog(await getServerCatalog(), 4, 4);
   return (
     <Section id="features" className="bg-background">
       <SectionTitle title={f.title} highlight={f.titleHighlight} description={f.description} />
       <Stagger gap={0.1} className="mx-auto mt-12 grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 lg:grid-cols-4">
         <BentoCard title={f.drag.title} desc={f.drag.desc} className="md:col-span-2">
-          <DemoGrid skins={demoSkins("mlbb", 16)} />
+          <DemoGrid skins={await demoSkins(16)} />
         </BentoCard>
 
         <BentoCard title={f.detect.title} desc={f.detect.desc}>

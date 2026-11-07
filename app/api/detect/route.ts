@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCatalog } from "@/lib/catalog";
+import { getServerCatalog } from "@/lib/server/catalog";
 import { getGame } from "@/lib/games";
 import { hashString } from "@/lib/utils";
 
@@ -26,7 +26,8 @@ export async function POST(req: Request) {
   if (!file.type.startsWith("image/")) return NextResponse.json({ error: "invalid_type" }, { status: 415 });
   if (file.size > MAX_UPLOAD_BYTES) return NextResponse.json({ error: "too_large" }, { status: 413 });
 
-  const { skins } = getCatalog(game.slug);
+  const { skins } = await getServerCatalog();
+  if (!skins.length) return NextResponse.json({ skins: [] });
   const seed = hashString(`${file.name}:${file.size}`);
   const count = 6 + (seed % 5); // 6–10 สกิน
   const picked = new Set<string>();

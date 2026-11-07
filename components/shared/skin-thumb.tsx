@@ -37,7 +37,8 @@ export function SkinThumb({
   priority?: boolean;
   sizes?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const failed = failedImage === skin.image;
   const tier = getTier(skin.game, skin.tier);
 
   return (
@@ -55,7 +56,7 @@ export function SkinThumb({
           unoptimized
           priority={priority}
           draggable={false}
-          onError={() => setFailed(true)}
+          onError={() => setFailedImage(skin.image)}
           className="object-cover select-none"
         />
       )}

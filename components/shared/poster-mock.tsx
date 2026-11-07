@@ -2,7 +2,8 @@ import Image from "next/image";
 import { SkinThumb } from "./skin-thumb";
 import { copy } from "@/lib/copy";
 import { formatInt } from "@/lib/format";
-import { featuredSkins, getCatalog } from "@/lib/catalog";
+import { featuredFromCatalog } from "@/lib/catalog";
+import { getServerCatalogSafe as getServerCatalog } from "@/lib/server/catalog";
 import { strongestMeta } from "@/lib/rankings";
 import { SAMPLE_RANK } from "@/lib/ranks";
 import { RankEmblem } from "./rank-emblem";
@@ -19,11 +20,12 @@ const hi = "text-sky-300";
 export const POSTER_SPOTS = { details: 11, hero: 22, rank: 38, price: 44, skins: 77 } as const;
 
 /** ป้ายตัวอย่างที่ตกแต่งแล้ว (ข้อมูลไอดี + ราคา + ตัวละคร + แรงค์ + กริดสกิน) */
-export function PosterMock({ className, compact, label }: { className?: string; compact?: boolean; label?: string }) {
+export async function PosterMock({ className, compact, label }: { className?: string; compact?: boolean; label?: string }) {
   const L = SAMPLE_LISTING;
+  const cat = await getServerCatalog();
 
   if (compact) {
-    const skins = featuredSkins("mlbb", 8, 4);
+    const skins = featuredFromCatalog(cat, 8, 4);
     return (
       <div role="img" aria-label={label} className={cn("relative overflow-hidden rounded-2xl bg-zinc-950 text-white", className)}>
         <div aria-hidden className="absolute -top-8 -right-8 size-40 rounded-full bg-gradient-to-br from-primary to-fuchsia-500 opacity-60 blur-2xl" />
@@ -47,9 +49,8 @@ export function PosterMock({ className, compact, label }: { className?: string; 
     );
   }
 
-  const skins = featuredSkins("mlbb", 24, 2);
+  const skins = featuredFromCatalog(cat, 24, 2);
   // หน้าปก = ฮีโร่ที่เมต้าแรงสุด (ในกลุ่มที่มีสกินระดับสูง) + สกินที่ดีที่สุดของฮีโร่นั้น
-  const cat = getCatalog("mlbb");
   const candidates = cat.heroes.filter((h) => h.skinIds.some((id) => (cat.skinById.get(id)?.tierRank ?? 0) >= 4));
   const meta = strongestMeta(candidates.map((h) => h.id));
   const metaHero = meta ? cat.heroById.get(meta.heroId) : undefined;

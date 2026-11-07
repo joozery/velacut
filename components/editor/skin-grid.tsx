@@ -19,7 +19,8 @@ import { X } from "lucide-react";
 import { m } from "framer-motion";
 import { SkinThumb } from "@/components/shared/skin-thumb";
 import { copy } from "@/lib/copy";
-import { getCatalog, type Skin } from "@/lib/catalog";
+import type { Skin } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { cn, fmt } from "@/lib/utils";
 import { useEditorStore } from "@/stores/editor-store";
@@ -84,7 +85,7 @@ function SortableCard({ skin, index, onRemove }: { skin: Skin; index: number; on
 export function SkinGrid({ game, skins, viewCols }: { game: GameSlug; skins: string[]; viewCols: number }) {
   // id คงที่ระหว่าง server/client (ดู demo-grid.tsx)
   const dndId = useId();
-  const { skinById } = getCatalog(game);
+  const { skinById } = useCatalog(game);
   const moveSkin = useEditorStore((s) => s.moveSkin);
   const removeSkin = useEditorStore((s) => s.removeSkin);
 

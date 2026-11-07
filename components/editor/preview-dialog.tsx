@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SkinThumb } from "@/components/shared/skin-thumb";
 import { copy } from "@/lib/copy";
-import { getCatalog } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { fmt } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function PreviewDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { skinById } = getCatalog(game);
+  const { skinById } = useCatalog(game);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">

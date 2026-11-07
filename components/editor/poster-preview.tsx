@@ -6,7 +6,7 @@ import { RankEmblem } from "@/components/shared/rank-emblem";
 import { SAMPLE_RANK } from "@/lib/ranks";
 import { SkinThumb } from "@/components/shared/skin-thumb";
 import { BRAND_NAME, copy } from "@/lib/copy";
-import { getCatalog } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import { formatInt } from "@/lib/format";
 import type { GameSlug } from "@/lib/games";
 import { SAMPLE_LISTING } from "@/lib/mock";
@@ -53,7 +53,7 @@ export function PosterPreview({
   className?: string;
   decoration?: Decoration;
 }) {
-  const cat = getCatalog(game);
+  const cat = useCatalog(game);
   const skins = skinIds.map((id) => cat.skinById.get(id)).filter((x) => !!x);
   // สกินน้อยกว่าจำนวนคอลัมน์ → ใช้เท่าจำนวนสกิน ให้แถวเต็มความกว้าง
   const cols = Math.max(1, Math.min(wantCols, skins.length));

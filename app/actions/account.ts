@@ -7,6 +7,7 @@ import { UserError, parsePosterInput, purchasePoster } from "@/lib/server/poster
 import { requireUser } from "@/lib/server/session";
 import { createTopup, getTopupStatus, topupWithTrueMoney } from "@/lib/server/topup";
 import { transferCoins } from "@/lib/server/transfer";
+import { getServerCatalog } from "@/lib/server/catalog";
 
 /** ห่อทุก action: error ที่ผู้ใช้ควรเห็นส่งข้อความกลับ ที่เหลือ log ไว้แล้วตอบข้อความกลาง */
 async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
@@ -26,7 +27,7 @@ export async function getAccountAction(): Promise<ActionResult<AccountSnapshot>>
 export async function purchasePosterAction(game: unknown, doc: unknown, cols: unknown): Promise<ActionResult<{ order: PosterOrder; account: AccountSnapshot }>> {
   return run(async () => {
     const user = await requireUser();
-    const order = await purchasePoster(user.id, parsePosterInput(game, doc, cols));
+    const order = await purchasePoster(user.id, parsePosterInput(game, doc, cols, await getServerCatalog()));
     return { order, account: await getAccount(user.id) };
   });
 }

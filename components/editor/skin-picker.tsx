@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputWithIcon } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { copy } from "@/lib/copy";
-import { getCatalog } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { MAX_SKINS } from "@/lib/pricing";
 import { fmt } from "@/lib/utils";
@@ -35,14 +35,14 @@ export function SkinPicker({ game, open, onOpenChange }: { game: GameSlug; open:
   const counts = useBrowseCounts(game);
   const current = useGroupSkins(game, group, query);
 
+  const cat = useCatalog(game);
   const letters = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const cat = getCatalog(game);
     const list = q
       ? cat.heroes.filter((h) => h.name.toLowerCase().includes(q) || h.skinIds.some((id) => cat.skinById.get(id)!.name.toLowerCase().includes(q)))
       : cat.heroes;
     return [...new Set(list.map((h) => h.letter))];
-  }, [game, query]);
+  }, [cat, query]);
 
   const jumpTo = (letter: string) =>
     scrollRef.current?.querySelector<HTMLElement>(`[data-letter="${letter}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" });

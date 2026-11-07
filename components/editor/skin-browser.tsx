@@ -11,7 +11,8 @@ import { AnimatePresence, m } from "framer-motion";
 import { Check, ChevronRight, Layers, SearchX } from "lucide-react";
 import { SkinThumb } from "@/components/shared/skin-thumb";
 import { copy } from "@/lib/copy";
-import { getCatalog, type Skin } from "@/lib/catalog";
+import type { Skin } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { MAX_SKINS } from "@/lib/pricing";
 import { GAME_TIERS, type LibraryGame } from "@/lib/tiers";
@@ -52,9 +53,9 @@ export function useSkinSelection(game: GameSlug) {
 
 /** สกินของกลุ่มที่เลือก (กรองตามคำค้นถ้าเป็นกลุ่มระดับ) */
 export function useGroupSkins(game: GameSlug, group: SkinGroup | null, query: string): { title: string; skins: Skin[] } | null {
+  const cat = useCatalog(game);
   return useMemo(() => {
     if (!group) return null;
-    const cat = getCatalog(game);
     if (group.kind === "hero") {
       const hero = cat.heroById.get(group.id);
       return hero ? { title: hero.name, skins: hero.skinIds.map((id) => cat.skinById.get(id)!) } : null;
@@ -63,7 +64,7 @@ export function useGroupSkins(game: GameSlug, group: SkinGroup | null, query: st
     const tier = GAME_TIERS[game as LibraryGame].find((t) => t.code === group.code);
     const skins = cat.skins.filter((s) => s.tier === group.code && (!q || matches(q, s.name, s.heroName)));
     return tier ? { title: tier.short === tier.label ? tier.label : `${tier.short} · ${tier.label}`, skins } : null;
-  }, [game, group, query]);
+  }, [cat, game, group, query]);
 }
 
 export function EmptyResult({ q }: { q: string }) {
@@ -181,7 +182,7 @@ export function HeroList({
   onHover?: (id: string) => void;
   letterHeaders?: boolean;
 }) {
-  const cat = getCatalog(game);
+  const cat = useCatalog(game);
   const q = query.trim().toLowerCase();
   const groups = useMemo(() => {
     const list = q
@@ -214,7 +215,7 @@ export function HeroList({
                     className={rowCls(active)}
                   >
                     <span className="relative shrink-0">
-                      <SkinThumb skin={cat.skinById.get(h.skinIds[0])!} compact hideTier sizes="48px" className="w-11 rounded-lg" />
+                      <SkinThumb skin={{ ...cat.skinById.get(h.skinIds[0])!, ...(h.image ? { image: h.image } : {}) }} compact hideTier sizes="48px" className="w-11 rounded-lg" />
                       {count > 0 && <PickedDot />}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -249,7 +250,7 @@ export function TierList({
   onOpen: (code: string) => void;
   onHover?: (code: string) => void;
 }) {
-  const cat = getCatalog(game);
+  const cat = useCatalog(game);
   const q = query.trim().toLowerCase();
   const rows = useMemo(
     () =>
@@ -291,7 +292,7 @@ export function TierList({
 
 /** จำนวนฮีโร่ / ระดับ (ใช้บนแท็บ) */
 export function useBrowseCounts(game: GameSlug) {
-  const cat = getCatalog(game);
+  const cat = useCatalog(game);
   return useMemo(
     () => ({ heroes: cat.heroes.length, tiers: GAME_TIERS[game as LibraryGame].filter((t) => cat.skins.some((s) => s.tier === t.code)).length }),
     [cat, game],

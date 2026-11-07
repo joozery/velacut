@@ -10,7 +10,8 @@ import { copy } from "@/lib/copy";
 import type { GameSlug } from "@/lib/games";
 import { MAX_SKINS, MIN_SKINS } from "@/lib/pricing";
 import { fmt } from "@/lib/utils";
-import { featuredSkins } from "@/lib/catalog";
+import { featuredFromCatalog } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import { SkinGrid } from "./skin-grid";
 import { SkinPicker } from "./skin-picker";
 import { useGrid } from "./use-grid";
@@ -28,6 +29,7 @@ function GridSkeleton() {
 }
 
 export function GridStep({ game }: { game: GameSlug }) {
+  const catalog = useCatalog(game);
   const { hydrated, skins, layout, viewCols } = useGrid(game);
   const [pickerOpen, setPickerOpen] = useState(false);
   const openPicker = () => setPickerOpen(true);
@@ -41,7 +43,7 @@ export function GridStep({ game }: { game: GameSlug }) {
           <div className="w-full max-w-xl text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface px-3 py-1.5 text-[11px] font-medium text-primary"><LayoutGrid className="size-3.5" aria-hidden />พื้นที่สร้างป้ายของคุณ</span>
             <div aria-hidden className="mx-auto mt-7 flex h-32 max-w-[280px] items-center justify-center sm:h-40 sm:max-w-[340px]">
-              {featuredSkins(game, 4).map((skin, i) => <div key={skin.id} style={{ transform: `translateY(${[10, -5, -5, 10][i]}px) rotate(${[-12, -4, 4, 12][i]}deg)` }} className="relative -mx-1 h-28 w-20 overflow-hidden rounded-xl border-[3px] border-surface shadow-lg sm:h-36 sm:w-24"><Image src={skin.image} alt="" fill sizes="96px" className="object-cover" /></div>)}
+              {featuredFromCatalog(catalog, 4).map((skin, i) => <div key={skin.id} style={{ transform: `translateY(${[10, -5, -5, 10][i]}px) rotate(${[-12, -4, 4, 12][i]}deg)` }} className="relative -mx-1 h-28 w-20 overflow-hidden rounded-xl border-[3px] border-surface shadow-lg sm:h-36 sm:w-24"><Image src={skin.image} alt="" fill sizes="96px" className="object-cover" /></div>)}
             </div>
             <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">เริ่มป้ายใหม่ในสไตล์คุณ</h1>
             <p className="mx-auto mt-3 max-w-xs text-xs leading-6 text-muted-foreground sm:text-sm">เลือกสกินที่มี จัดเรียงให้ลงตัว<br />แล้วเติมราคาและรายละเอียดในขั้นตอนถัดไป</p>

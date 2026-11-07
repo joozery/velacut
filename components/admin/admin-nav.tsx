@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, CalendarCheck, ChartNoAxesCombined, Coins, CreditCard, LayoutDashboard, ListOrdered, LogOut, Megaphone, Paintbrush, QrCode, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, CalendarCheck, ChartNoAxesCombined, Coins, CreditCard, Images, LayoutDashboard, ListOrdered, LogOut, Megaphone, Paintbrush, QrCode, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/transactions", label: "รายการทั้งหมด", icon: ListOrdered },
   { href: "/admin/settings", label: "ตั้งค่าเครดิต", icon: Coins },
   { href: "/admin/appearance", label: "ตกแต่งหน้าบ้าน", icon: Paintbrush },
+  { href: "/admin/library", label: "คลังฮีโร่และสกิน", icon: Images },
   { href: "/admin/payments", label: "ช่องทางชำระเงิน", icon: CreditCard },
   { href: "/admin/promo", label: "โปรโมชัน", icon: Megaphone },
   { href: "/admin/daily", label: "เช็กอินรายวัน", icon: CalendarCheck },

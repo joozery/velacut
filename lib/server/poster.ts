@@ -1,5 +1,5 @@
 import { MongoServerError } from "mongodb";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog, type Catalog } from "@/lib/catalog";
 import { GAME_SLUGS, type GameSlug } from "@/lib/games";
 import { MAX_SKINS, MIN_SKINS, TEMPLATE_PRICES, payableTotal, type TemplateId } from "@/lib/pricing";
 import { fromUnits, toUnits } from "@/lib/money";
@@ -26,13 +26,14 @@ function sanitizeDecoration(raw: unknown): Decoration | undefined {
 }
 
 /** ตรวจและทำความสะอาดข้อมูลป้ายจาก client — ราคา/สิทธิ์คำนวณฝั่ง server เท่านั้น */
-export function parsePosterInput(game: unknown, rawDoc: unknown, rawCols: unknown): { game: GameSlug; doc: EditorDoc; cols: number } {
+export function parsePosterInput(game: unknown, rawDoc: unknown, rawCols: unknown, managedCatalog?: Catalog): { game: GameSlug; doc: EditorDoc; cols: number } {
   if (!GAME_SLUGS.includes(game as GameSlug)) throw new UserError("ไม่พบเกมนี้");
   const g = game as GameSlug;
   const d = (rawDoc ?? {}) as Record<string, unknown>;
   const skins = Array.isArray(d.skins) ? d.skins.filter((s): s is string => typeof s === "string") : [];
-  const catalog = getCatalog(g);
-  if (skins.length < MIN_SKINS || skins.length > MAX_SKINS || new Set(skins).size !== skins.length || skins.some((id) => !catalog.skinById.has(id))) {
+  const catalog = managedCatalog ?? getCatalog(g);
+  const allowed = new Set(catalog.skins.map(s => s.id));
+  if (skins.length < MIN_SKINS || skins.length > MAX_SKINS || new Set(skins).size !== skins.length || skins.some((id) => !allowed.has(id))) {
     throw new UserError("กรุณาตรวจรายการสกินก่อนดาวน์โหลด");
   }
   const template = (Object.keys(TEMPLATE_PRICES) as TemplateId[]).includes(d.template as TemplateId) ? (d.template as TemplateId) : null;

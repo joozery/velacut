@@ -8,7 +8,7 @@ import { Input, Label } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { getCatalog } from "@/lib/catalog";
+import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { DEFAULT_DECORATION, useEditorStore, useGameEditor, type Decoration } from "@/stores/editor-store";
 import { PosterPreview } from "./poster-preview";
@@ -28,6 +28,7 @@ const fields = [
 ] as const;
 
 export function DecorateStep({ game }: { game: GameSlug }) {
+  const catalog = useCatalog(game);
   const ready = useRequireSkins(game);
   const { doc, past, future } = useGameEditor(game);
   const { skins, viewCols } = useGrid(game);
@@ -65,8 +66,8 @@ export function DecorateStep({ game }: { game: GameSlug }) {
             </div>
             <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div>
             <RankPicker id={`${prefix}-decorate-rank`} value={decoration.rank} onChange={(rank) => patch({ rank })} /></>}
-            {(!tool || tool === "cover") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><Select value={decoration.coverId || AUTO_COVER} onValueChange={(v) => patch({ coverId: v === AUTO_COVER ? "" : v })}><SelectTrigger id={`${prefix}-decorate-cover`} className="h-12 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={AUTO_COVER}>เลือกจากสกินระดับสูงสุดอัตโนมัติ</SelectItem>{skins.map((id) => <SelectItem key={id} value={id}>{getCatalog(game).skinById.get(id)?.name ?? id}</SelectItem>)}</SelectContent></Select>
-              {tool === "cover" && <div className="mt-2 grid grid-cols-3 gap-3">{skins.map((id) => { const skin = getCatalog(game).skinById.get(id); return skin ? <button key={id} type="button" aria-label={`ใช้ ${skin.name} เป็นหน้าปก`} aria-pressed={decoration.coverId === id} onClick={() => patch({ coverId: id })} className={`relative overflow-hidden rounded-2xl border-2 ${decoration.coverId === id ? "border-primary ring-2 ring-primary/20" : "border-transparent"}`}><Image src={skin.image} alt={skin.name} width={120} height={160} className="aspect-[3/4] w-full object-cover" /><span className="absolute inset-x-0 bottom-0 bg-black/65 p-1 text-[10px] text-white">{skin.name}</span></button> : null; })}</div>}
+            {(!tool || tool === "cover") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><Select value={decoration.coverId || AUTO_COVER} onValueChange={(v) => patch({ coverId: v === AUTO_COVER ? "" : v })}><SelectTrigger id={`${prefix}-decorate-cover`} className="h-12 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={AUTO_COVER}>เลือกจากสกินระดับสูงสุดอัตโนมัติ</SelectItem>{skins.map((id) => <SelectItem key={id} value={id}>{catalog.skinById.get(id)?.name ?? id}</SelectItem>)}</SelectContent></Select>
+              {tool === "cover" && <div className="mt-2 grid grid-cols-3 gap-3">{skins.map((id) => { const skin = catalog.skinById.get(id); return skin ? <button key={id} type="button" aria-label={`ใช้ ${skin.name} เป็นหน้าปก`} aria-pressed={decoration.coverId === id} onClick={() => patch({ coverId: id })} className={`relative overflow-hidden rounded-2xl border-2 ${decoration.coverId === id ? "border-primary ring-2 ring-primary/20" : "border-transparent"}`}><Image src={skin.image} alt={skin.name} width={120} height={160} className="aspect-[3/4] w-full object-cover" /><span className="absolute inset-x-0 bottom-0 bg-black/65 p-1 text-[10px] text-white">{skin.name}</span></button> : null; })}</div>}
             </div>}
             {(!tool || tool === "color") && <><div className="flex items-center justify-between gap-3"><Label htmlFor={`${prefix}-decorate-accent`}>สีข้อความไฮไลต์</Label><input id={`${prefix}-decorate-accent`} type="color" value={decoration.accent} onChange={(e) => patch({ accent: e.target.value })} className="h-10 w-16 cursor-pointer rounded-lg border border-input bg-surface p-1" /></div>
               <div className="grid grid-cols-6 gap-2">{["#fcd34d", "#ffffff", "#60a5fa", "#c084fc", "#fb7185", "#4ade80"].map((color) => <button type="button" key={color} aria-label={`สี ${color}`} aria-pressed={decoration.accent === color} onClick={() => patch({ accent: color })} className={`grid aspect-square place-items-center rounded-2xl border border-border ${decoration.accent === color ? "ring-2 ring-primary ring-offset-2 ring-offset-surface" : ""}`} style={{backgroundColor:color}}>{decoration.accent === color && <Check className="size-5 text-zinc-800" />}</button>)}</div>

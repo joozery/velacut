@@ -2,8 +2,8 @@ import { UserError } from "./poster";
 import { publicBaseUrl, putPublicObject } from "./storage";
 
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
-export type UploadFolder = "promo" | "appearance";
-const FOLDERS: UploadFolder[] = ["promo", "appearance"];
+export type UploadFolder = "promo" | "appearance" | "catalog";
+const FOLDERS: UploadFolder[] = ["promo", "appearance", "catalog"];
 
 /**
  * แปลงรูปที่อัปโหลดเป็น webp (กว้าง/สูงไม่เกิน 1600px) — การ encode ใหม่ตัด metadata

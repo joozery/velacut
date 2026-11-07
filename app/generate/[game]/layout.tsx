@@ -7,6 +7,8 @@ import { EditorBottomBar } from "@/components/editor/editor-bottom-bar";
 import { EditorHydrator } from "@/components/editor/editor-hydrator";
 import { EditorMobileSteps } from "@/components/editor/editor-mobile-steps";
 import { GAMES, getGame } from "@/lib/games";
+import { CatalogProvider } from "@/components/shared/catalog-provider";
+import { getCatalogChangesSafe } from "@/lib/server/catalog";
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ game: g.slug }));
@@ -23,9 +25,10 @@ export function generateStaticParams() {
 export default async function EditorLayout({ children, params }: { children: React.ReactNode; params: Promise<{ game: string }> }) {
   const game = getGame((await params).game);
   if (!game) notFound();
+  const changes = await getCatalogChangesSafe();
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
+    <CatalogProvider changes={changes}><div className="flex h-dvh flex-col overflow-hidden bg-background">
       <EditorTopBar />
       {/* useSearchParams ต้องอยู่ใน Suspense */}
       <Suspense>
@@ -42,6 +45,6 @@ export default async function EditorLayout({ children, params }: { children: Rea
           </div>
         </div>
       </Suspense>
-    </div>
+    </div></CatalogProvider>
   );
 }
