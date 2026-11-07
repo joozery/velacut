@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useBalance } from "@/stores/account-store";
-import { FileImage, History, House, LogIn, Plus, Wallet } from "lucide-react";
+import { FileImage, History, House, LogIn, Plus, Send, Wallet } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { CoinIcon } from "@/components/shared/coin";
 import { PillNav, type PillNavItem } from "@/components/ui/pill-nav";
@@ -22,6 +22,7 @@ const NAV: PillNavItem[] = [
 const MOBILE_NAV: PillNavItem[] = [
   ...NAV,
   { href: "/profile", label: copy.header.profile },
+  { href: "/profile#transfer", label: copy.topup.transfer.title, icon: <Send aria-hidden /> },
   { href: "/chat", label: copy.nav.chat },
 ];
 

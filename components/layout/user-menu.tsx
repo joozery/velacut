@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLogout } from "@/components/auth/use-logout";
 import { useTheme } from "next-themes";
-import { ChevronDown, FileImage, History, LogOut, Monitor, Moon, Palette, Sun, User, Wallet } from "lucide-react";
+import { ChevronDown, FileImage, History, LogOut, Monitor, Moon, Palette, Send, Sun, User, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import {
   Dropdown,
@@ -54,6 +54,9 @@ export function UserMenu({ user, showLabel = false }: { user: { name: string; em
         </DropdownItem>
         <DropdownItem asChild>
           <Link href="/topup"><Wallet aria-hidden />{c.topup}</Link>
+        </DropdownItem>
+        <DropdownItem asChild>
+          <Link href="/profile#transfer"><Send aria-hidden />{copy.topup.transfer.title}</Link>
         </DropdownItem>
         <DropdownSub>
           <DropdownSubTrigger><Palette aria-hidden />{c.theme}</DropdownSubTrigger>

@@ -634,3 +634,23 @@ test("profile: sessions refresh the saved name and reject tokens from before a p
   assert.equal(after.status, 200);
   assert.equal(await after.json(), null);
 });
+
+test("transfer: exact decimals and minimum amount are enforced without moving money", async () => {
+  await give(alice, 30, 20);
+  for (const amount of [0, 0.99, -1, 1.001, Number.NaN, Number.POSITIVE_INFINITY]) {
+    await assert.rejects(m.transfer.transferCoins(alice, A, B, amount), /ขั้นต่ำ/);
+  }
+  assert.deepEqual(await balance(alice), { transferable: 30, bonus: 20, balance: 50 });
+  assert.equal((await balance(bob)).balance, 0);
+});
+
+test("transfer: concurrent different transfers cannot overdraw the sender", async () => {
+  await give(alice, 10, 20);
+  const results = await Promise.allSettled([
+    m.transfer.transferCoins(alice, A, B, 7),
+    m.transfer.transferCoins(alice, A, B, 7),
+  ]);
+  assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
+  assert.deepEqual(await balance(alice), { transferable: 3, bonus: 20, balance: 23 });
+  assert.equal((await balance(bob)).balance, 7);
+});

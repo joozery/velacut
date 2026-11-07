@@ -1,6 +1,6 @@
 import { findUserByEmail, normalizeEmail } from "@/lib/auth/user-store";
 import { formatCoinsFixed } from "@/lib/format";
-import { fromUnits, toUnits } from "@/lib/money";
+import { toUnits } from "@/lib/money";
 import { collections, newId } from "./collections";
 import { credit, debitTransferable } from "./wallet";
 import { UserError } from "./poster";
@@ -10,10 +10,11 @@ const mask = (email: string) => email.replace(/^(.).*?(@.*)$/, "$1•••$2");
 /** โอนเฉพาะเครดิตที่โอนได้ (ไม่รวมโบนัส) */
 export async function transferCoins(fromUserId: string, fromEmail: string, toEmail: string, coins: number) {
   const amount = toUnits(coins);
-  if (!Number.isFinite(coins) || amount < toUnits(1) || fromUnits(amount) !== Math.round(coins * 100) / 100) throw new UserError("โอนขั้นต่ำ 1 เครดิต ทศนิยมไม่เกิน 2 ตำแหน่ง");
+  if (!Number.isFinite(coins) || !Number.isSafeInteger(amount) || amount < toUnits(1) || Math.abs(coins * 100 - amount) > 1e-6) throw new UserError("โอนขั้นต่ำ 1 เครดิต ทศนิยมไม่เกิน 2 ตำแหน่ง");
   if (normalizeEmail(toEmail) === normalizeEmail(fromEmail)) throw new UserError("โอนให้ตัวเองไม่ได้");
   const recipient = await findUserByEmail(toEmail);
   if (!recipient) throw new UserError("ไม่พบบัญชีผู้รับ กรุณาตรวจอีเมลอีกครั้ง");
+  if (recipient.id === fromUserId) throw new UserError("โอนให้ตัวเองไม่ได้");
 
   const { txs } = await collections();
   if (!(await debitTransferable(fromUserId, amount))) throw new UserError("เครดิตที่โอนได้ไม่เพียงพอ");
