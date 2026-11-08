@@ -34,7 +34,7 @@ export function useCheckout(game: GameSlug) {
   const total = paid ? 0 : payableTotal(skins.length, template, output, cfg);
   const balance = useBalance();
   const after = Math.round((balance - total) * 100) / 100;
-  return { output, skinCost, templateFee, templateName: cfg[template].name, template, cfg, total, balance, after, paid, loggedIn, short: loggedIn && after < 0 ? -after : 0 };
+  return { output, skinCost, templateFee, templateName: cfg[template].name, template, cfg, needsBanner: cfg[template].kind === "upload" && !doc.decoration?.banner, total, balance, after, paid, loggedIn, short: loggedIn && after < 0 ? -after : 0 };
 }
 
 function Row({ label, sub, value, className }: { label: string; sub?: string; value: string; className?: string }) {
@@ -74,7 +74,7 @@ export function CheckoutStep({ game }: { game: GameSlug }) {
 
       <aside className="border-t border-border bg-surface p-5 sm:p-6 lg:overflow-y-auto lg:border-t-0 lg:border-l">
         {!k.loggedIn && <p className="mb-4 rounded-xl bg-primary-soft p-3 text-xs leading-5 text-primary">เข้าสู่ระบบเพื่อดาวน์โหลดแบบไม่มีลายน้ำ · แบบมีลายน้ำดาวน์โหลดฟรีได้เลย</p>}
-        {k.template === "b" && !doc.decoration?.banner && (
+        {k.needsBanner && (
           <div role="status" className="mb-5 flex items-center gap-3 rounded-2xl bg-primary-soft p-3 text-primary-soft-foreground">
             <AlertCircle className="size-5 shrink-0" aria-hidden />
             <p className="flex-1 text-sm font-medium">{c.noInfo}</p>

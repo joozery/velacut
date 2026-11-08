@@ -96,7 +96,7 @@ test("poster: rejects invalid input", () => {
   const bad = doc(); bad.skins[0] = "missing";
   assert.throws(() => m.poster.parsePosterInput("mlbb", bad, 6), /สกิน/);
   assert.throws(() => m.poster.parsePosterInput("other", doc(), 6), /เกม/);
-  assert.throws(() => m.poster.parsePosterInput("mlbb", { ...doc(), template: "zzz" }, 6), /แบบป้าย/);
+  assert.throws(() => m.poster.parsePosterInput("mlbb", { ...doc(), template: "Bad Id!" }, 6), /แบบป้าย/);
 });
 
 test("daily: once per day, credits bonus", async () => {
@@ -800,6 +800,51 @@ test("templates: validates config, charges admin price, blocks disabled template
   await tpl.saveTemplates({ ...cfg, a: { ...cfg.a, enabled: false } }, "test");
   assert.equal((await m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", doc(), 6))).id, order.id);
   await assert.rejects(m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", doc(), 5)), /ปิดให้บริการ/);
+});
+
+test("templates: admin-made templates with layers are validated, priced and protected from deletion", async () => {
+  const tpl = await import("../lib/server/templates");
+  const { renderTokens, templateUses } = await import("../lib/templates");
+  const cfg = await tpl.getTemplatesConfig();
+  assert.equal(cfg.a.kind, "banner");
+  assert.equal(cfg.b.kind, "upload");
+  assert.deepEqual(Object.keys(cfg).slice(0, 3), ["none", "a", "b"]);
+
+  const layers = [
+    { id: "t1", type: "text", text: "ราคา {price} บาท", x: 50, y: 70, size: 6, weight: 800, color: "#ffffff", valueColor: "accent", align: "center", shadow: true },
+    { id: "r1", type: "rank", source: "peakRank", x: 999, y: 40, size: 14 },
+  ];
+  const custom = { enabled: true, kind: "banner", name: "แบบทดสอบ", desc: "", price: 7, compareAtPrice: null, banner: "/logo/bannerexam.png", layers };
+  const parsed = tpl.parseTemplates({ ...cfg, "t-test": custom });
+  assert.equal(parsed["t-test"].layers?.length, 2);
+  assert.equal(parsed["t-test"].layers?.[1].x, 120, "ตำแหน่งถูกจำกัดช่วง");
+  // แบบมาตรฐานเปลี่ยนชนิดไม่ได้ · id ผิดรูปแบบ / ชิ้นส่วนผิด ถูกปฏิเสธ
+  assert.equal(tpl.parseTemplates({ a: { kind: "upload" } }).a.kind, "banner");
+  assert.throws(() => tpl.parseTemplates({ "Bad Id!": custom }), /รหัสแบบป้าย/);
+  assert.throws(() => tpl.parseTemplates({ "t-x": { ...custom, layers: [{ type: "script" }] } }), /ชิ้นส่วน/);
+  assert.throws(() => tpl.parseTemplates({ "t-x": { ...custom, layers: [{ ...layers[0], text: "  " }] } }), /ต้องไม่ว่าง/);
+  assert.throws(() => tpl.parseTemplates({ "t-x": { ...custom, banner: "https://evil.test/x.png" } }), /ภาพหัวป้าย/);
+
+  // ข้อความ: ช่องที่ลูกค้าไม่กรอกเลย → ซ่อนทั้งบรรทัด
+  assert.equal(renderTokens("ราคา {price} บาท", { price: 0 }), null);
+  assert.deepEqual(renderTokens("ราคา {price} บาท", { price: 9999 })?.map((p) => p.text).join(""), `ราคา ${(9999).toLocaleString("th-TH")} บาท`);
+  assert.deepEqual(renderTokens("ขายด่วน", {})?.[0].text, "ขายด่วน");
+  const uses = templateUses(parsed["t-test"]);
+  assert.ok(uses.tokens.has("price") && uses.peakRank && uses.accent && !uses.rank);
+
+  await tpl.saveTemplates(parsed, "test");
+  await give(alice, 100);
+  const order = await m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", { ...doc(), template: "t-test", decoration: { ...DEFAULT_DECO, price: 9999, peakRank: "mythic-glory" } }, 6));
+  assert.equal(order.amount, 12 * 0.3 + 7);
+  assert.equal(order.doc.decoration?.peakRank, "mythic-glory");
+  await assert.rejects(m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", { ...doc(), template: "t-nope" }, 6)), /ไม่พบแบบป้าย/);
+  // มีคนซื้อแล้ว → ลบไม่ได้ (ปิดได้)
+  await assert.rejects(tpl.saveTemplates(cfg, "test"), /ลบแบบที่มีคนซื้อ/);
+  await tpl.saveTemplates({ ...parsed, "t-test": { ...parsed["t-test"], enabled: false } }, "test");
+
+  // แบบให้ลูกค้าอัปโหลดเอง (สร้างใหม่) ต้องมีแบนเนอร์
+  await tpl.saveTemplates({ ...parsed, "t-up": { ...custom, kind: "upload", layers: [] } }, "test");
+  await assert.rejects(m.poster.purchasePoster(alice, m.poster.parsePosterInput("mlbb", { ...doc(), template: "t-up" }, 5)), /แบนเนอร์/);
 });
 
 test("template B: requires the customer's own uploaded banner", async () => {

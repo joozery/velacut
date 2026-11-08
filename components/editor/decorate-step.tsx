@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Check, Eye, Minus, Plus, Redo2, ImagePlus, LayoutTemplate, Palette, Type, Undo2 } from "lucide-react";
 import { useEditorTemplates } from "./use-templates";
+import { templateUses } from "@/lib/templates";
 import { BannerUpload } from "./banner-upload";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
@@ -46,39 +47,49 @@ export function DecorateStep({ game }: { game: GameSlug }) {
 
   if (!ready) return <div role="status" aria-label="กำลังเตรียมป้าย" aria-busy="true" className="m-6 h-80 animate-pulse rounded-2xl bg-surface-2" />;
 
+  const kind = tplCfg[doc.template]?.kind ?? "grid";
+  const uses = templateUses(tplCfg[doc.template]);
+  const numFields = fields.filter(([key]) => uses.tokens.has(key));
+  const hasText = uses.tokens.has("code") || uses.tokens.has("tagline") || numFields.length > 0 || uses.rank || uses.peakRank;
+  const sectionsFor = (tool?: Tool) => ({ text: (!tool || tool === "text") && hasText, cover: (!tool || tool === "cover") && uses.cover, color: (!tool || tool === "color") && uses.accent });
+
   const poster = <PosterPreview game={game} skinIds={skins} cols={viewCols} template={doc.template} decoration={decoration} />;
 
-  const renderSettings = (prefix: string, tool?: Tool) => <>
+  const renderSettings = (prefix: string, tool?: Tool) => { const show = sectionsFor(tool); const nothing = kind === "banner" && tool !== "template" && !show.text && !show.cover && !show.color; return <>
         {!tool && <h2 className="text-lg font-bold">ตกแต่งป้ายของคุณ</h2>}
         {!tool && <p className="mt-1 text-xs text-muted-foreground">เปลี่ยนข้อมูลแล้วดูผลบนป้ายได้ทันที</p>}
         <div className="grid gap-4 pt-4">
-          {(!tool || tool === "template" || doc.template === "none") && <div className="grid gap-2">
+          {(!tool || tool === "template" || kind === "grid") && <div className="grid gap-2">
             <Label htmlFor={`${prefix}-decorate-template`}>แบบป้าย</Label>
             <Select value={doc.template} onValueChange={(v) => setTemplate(game, v as typeof doc.template)}>
               <SelectTrigger id={`${prefix}-decorate-template`} className="h-12 w-full"><SelectValue /></SelectTrigger>
               <SelectContent>{tplList.map((id) => <SelectItem key={id} value={id}>{tplCfg[id].name}</SelectItem>)}</SelectContent>
             </Select>
           </div>}
-          {doc.template === "b" ? (tool !== "template" && <BannerUpload value={decoration.banner} onChange={(banner) => patch({ banner })} />) : doc.template === "none" ? <p className="rounded-2xl bg-primary-soft p-4 text-sm text-primary-soft-foreground">แบบนี้แสดงเฉพาะตารางสกิน เลือกเทมเพลต A หรือ B เพื่อเพิ่มข้อมูลไอดีและภาพหน้าปก</p> : <>
-            {(!tool || tool === "text") && <><div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-code`}>ชื่อป้าย / รหัสไอดี</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-code`} value={decoration.code} maxLength={40} placeholder="เช่น ไอดี MLBB 001" onChange={(e) => patch({ code: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              {fields.filter(([key]) => doc.template === "b" || !["down", "honor"].includes(key)).map(([key, label]) => <div key={key} className="grid gap-2">
+          {kind === "grid" && tool !== "template" && <p className="rounded-2xl bg-primary-soft p-4 text-sm text-primary-soft-foreground">แบบนี้แสดงเฉพาะตารางสกิน เลือกแบบที่มีหัวป้ายเพื่อเพิ่มข้อมูลไอดี</p>}
+          {kind === "upload" && tool !== "template" && <BannerUpload value={decoration.banner} onChange={(banner) => patch({ banner })} />}
+          {show.text && <>
+            {uses.tokens.has("code") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-code`}>ชื่อป้าย / รหัสไอดี</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-code`} value={decoration.code} maxLength={40} placeholder="เช่น ไอดี MLBB 001" onChange={(e) => patch({ code: e.target.value })} /></div>}
+            {numFields.length > 0 && <div className="grid grid-cols-2 gap-3">
+              {numFields.map(([key, label]) => <div key={key} className="grid gap-2">
                 <Label htmlFor={`${prefix}-decorate-${key}`} className="text-xs">{label}</Label>
-                <Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-${key}`} type="number" min={0} max={key === "winrate" ? 100 : undefined} step={key === "winrate" ? 0.1 : 1} value={decoration[key]} onChange={(e) => patch({ [key]: Math.min(key === "winrate" ? 100 : Number.MAX_SAFE_INTEGER, Math.max(0, Number(e.target.value) || 0)) })} />
+                <Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-${key}`} type="number" min={0} max={key === "winrate" ? 100 : undefined} step={key === "winrate" ? 0.01 : 1} value={decoration[key] || ""} placeholder="0" onChange={(e) => patch({ [key]: Math.min(key === "winrate" ? 100 : Number.MAX_SAFE_INTEGER, Math.max(0, Number(e.target.value) || 0)) })} />
               </div>)}
-            </div>
-            <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div>
-            <RankPicker id={`${prefix}-decorate-rank`} value={decoration.rank} onChange={(rank) => patch({ rank })} /></>}
-            {(!tool || tool === "cover") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><Select value={decoration.coverId || AUTO_COVER} onValueChange={(v) => patch({ coverId: v === AUTO_COVER ? "" : v })}><SelectTrigger id={`${prefix}-decorate-cover`} className="h-12 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={AUTO_COVER}>เลือกจากสกินระดับสูงสุดอัตโนมัติ</SelectItem>{skins.map((id) => <SelectItem key={id} value={id}>{catalog.skinById.get(id)?.name ?? id}</SelectItem>)}</SelectContent></Select>
+            </div>}
+            {uses.tokens.has("tagline") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div>}
+            {uses.rank && <RankPicker id={`${prefix}-decorate-rank`} label={uses.peakRank ? "แรงค์ปัจจุบัน" : undefined} value={decoration.rank} onChange={(rank) => patch({ rank })} />}
+            {uses.peakRank && <RankPicker id={`${prefix}-decorate-peak-rank`} label="แรงค์สูงสุด" hint="แรงค์สูงสุดที่ไอดีนี้เคยได้" value={decoration.peakRank} onChange={(peakRank) => patch({ peakRank })} />}
+          </>}
+          {show.cover && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-cover`}>ภาพหน้าปก</Label><Select value={decoration.coverId || AUTO_COVER} onValueChange={(v) => patch({ coverId: v === AUTO_COVER ? "" : v })}><SelectTrigger id={`${prefix}-decorate-cover`} className="h-12 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={AUTO_COVER}>เลือกจากสกินระดับสูงสุดอัตโนมัติ</SelectItem>{skins.map((id) => <SelectItem key={id} value={id}>{catalog.skinById.get(id)?.name ?? id}</SelectItem>)}</SelectContent></Select>
               {tool === "cover" && <div className="mt-2 grid grid-cols-3 gap-3">{skins.map((id) => { const skin = catalog.skinById.get(id); return skin ? <button key={id} type="button" aria-label={`ใช้ ${skin.name} เป็นหน้าปก`} aria-pressed={decoration.coverId === id} onClick={() => patch({ coverId: id })} className={`relative overflow-hidden rounded-2xl border-2 ${decoration.coverId === id ? "border-primary ring-2 ring-primary/20" : "border-transparent"}`}><Image src={skin.image} alt={skin.name} width={120} height={160} className="aspect-[3/4] w-full object-cover" /><span className="absolute inset-x-0 bottom-0 bg-black/65 p-1 text-[10px] text-white">{skin.name}</span></button> : null; })}</div>}
             </div>}
-            {(!tool || tool === "color") && <><div className="flex items-center justify-between gap-3"><Label htmlFor={`${prefix}-decorate-accent`}>สีข้อความไฮไลต์</Label><input id={`${prefix}-decorate-accent`} type="color" value={decoration.accent} onChange={(e) => patch({ accent: e.target.value })} className="h-10 w-16 cursor-pointer rounded-lg border border-input bg-surface p-1" /></div>
+          {show.color && <><div className="flex items-center justify-between gap-3"><Label htmlFor={`${prefix}-decorate-accent`}>สีข้อความไฮไลต์</Label><input id={`${prefix}-decorate-accent`} type="color" value={decoration.accent} onChange={(e) => patch({ accent: e.target.value })} className="h-10 w-16 cursor-pointer rounded-lg border border-input bg-surface p-1" /></div>
               <div className="grid grid-cols-6 gap-2">{["#fcd34d", "#ffffff", "#60a5fa", "#c084fc", "#fb7185", "#4ade80"].map((color) => <button type="button" key={color} aria-label={`สี ${color}`} aria-pressed={decoration.accent === color} onClick={() => patch({ accent: color })} className={`grid aspect-square place-items-center rounded-2xl border border-border ${decoration.accent === color ? "ring-2 ring-primary ring-offset-2 ring-offset-surface" : ""}`} style={{backgroundColor:color}}>{decoration.accent === color && <Check className="size-5 text-zinc-800" />}</button>)}</div>
             </>}
-          </>}
+          {nothing && <p className="rounded-2xl bg-surface-2 p-4 text-sm text-muted-foreground">{kind === "banner" && !uses.any ? "แบบนี้ใช้ภาพหัวป้ายสำเร็จรูป ไม่มีข้อมูลให้กรอก" : "แบบป้ายนี้ไม่มีตัวเลือกนี้"}</p>}
         </div>
         {!tool && <p className="mt-6 text-xs leading-relaxed text-muted-foreground">บันทึกการแก้ไขอัตโนมัติในแท็บนี้ ย้อนกลับไปเปลี่ยนสกินหรือแบบป้ายได้</p>}
-  </>;
+  </>; };
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_22rem]">

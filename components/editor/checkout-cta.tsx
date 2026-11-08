@@ -38,8 +38,8 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
   const pathname = usePathname();
   const search = useSearchParams().toString();
 
-  // เทมเพลต B ต้องมีแบนเนอร์ของลูกค้าก่อน (server ตรวจซ้ำ)
-  if (k.template === "b" && !doc.decoration?.banner) {
+  // แบบที่ให้ลูกค้าอัปโหลดแบนเนอร์เอง ต้องมีแบนเนอร์ก่อน (server ตรวจซ้ำ)
+  if (k.needsBanner) {
     return (
       <Button asChild disabled={disabled} variant="outline" className="rounded-full px-5">
         <Link href={`/generate/${game}?step=decorate`}>

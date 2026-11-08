@@ -5,10 +5,11 @@ export const PRICE_PER_SKIN = 0.3;
 export const MIN_SKINS = 4;
 export const MAX_SKINS = 60;
 
-export type TemplateId = "none" | "a" | "b";
+/** id แบบป้าย — แบบมาตรฐาน none / a / b + แบบที่แอดมินสร้างเองในหลังบ้าน */
+export type TemplateId = string;
 
 /** ราคาตั้งต้น — ราคาจริงมาจากหน้าตั้งค่าเทมเพลตในหลังบ้าน (lib/templates.ts) */
-export const TEMPLATE_PRICES: Record<TemplateId, { price: number; compareAtPrice?: number }> = {
+export const TEMPLATE_PRICES: Record<string, { price: number; compareAtPrice?: number }> = {
   none: { price: 0 },
   a: { price: 15, compareAtPrice: 25 },
   b: { price: 25, compareAtPrice: 45 },

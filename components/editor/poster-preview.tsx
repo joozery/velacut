@@ -1,14 +1,13 @@
 "use client";
 
-import { ImagePlus } from "lucide-react";
 import { SkinThumb } from "@/components/shared/skin-thumb";
 import { BRAND_NAME, copy } from "@/lib/copy";
 import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import type { TemplateId } from "@/lib/pricing";
 import { useTemplates } from "@/components/shared/templates-provider";
-import { DEFAULT_TEMPLATE_A_BANNER } from "@/lib/templates";
-import { exportSafeSrc } from "@/lib/media-url";
+import type { TemplateSetting } from "@/lib/templates";
+import { TemplateHeader } from "./template-header";
 import { cn, fmt } from "@/lib/utils";
 import type { Decoration } from "@/stores/editor-store";
 
@@ -34,7 +33,8 @@ export function PosterPreview({
   template,
   className,
   decoration,
-  bannerA,
+  setting: override,
+  sample,
 }: {
   game: GameSlug;
   skinIds: string[];
@@ -42,16 +42,19 @@ export function PosterPreview({
   cols: number;
   template: TemplateId;
   className?: string;
-  decoration?: Decoration;
-  /** หลังบ้าน: ดูภาพหัวป้าย A ที่ยังไม่บันทึก */
-  bannerA?: string;
+  decoration?: Partial<Decoration>;
+  /** หลังบ้าน: ดูค่าแบบที่ยังไม่บันทึก */
+  setting?: TemplateSetting;
+  /** เติมค่าตัวอย่างในช่องที่ยังไม่กรอก ให้เห็นหน้าตาแบบ */
+  sample?: boolean;
 }) {
   const cat = useCatalog(game);
   const skins = skinIds.map((id) => cat.skinById.get(id)).filter((x) => !!x);
   // สกินน้อยกว่าจำนวนคอลัมน์ → ใช้เท่าจำนวนสกิน ให้แถวเต็มความกว้าง
   const cols = Math.max(1, Math.min(wantCols, skins.length));
   const templates = useTemplates();
-  const name = templates[template]?.name ?? template;
+  const setting = override ?? templates[template];
+  const name = setting?.name ?? template;
 
   return (
     <div
@@ -61,27 +64,9 @@ export function PosterPreview({
         "@container relative isolate w-full shrink-0 overflow-hidden rounded-2xl bg-zinc-950 text-white shadow-soft-lg",
         className,
       )}
-      style={decoration ? { "--color-amber-300": decoration.accent } as React.CSSProperties : undefined}
+      style={decoration?.accent ? { "--color-amber-300": decoration.accent } as React.CSSProperties : undefined}
     >
-      {template === "a" ? (
-        // ภาพหัวป้ายตั้งจากหลังบ้าน (เมนูเทมเพลตป้าย)
-        // eslint-disable-next-line @next/next/no-img-element -- admin upload on R2, html-to-image needs a plain <img>
-        <img src={exportSafeSrc(bannerA ?? templates.a.banner ?? DEFAULT_TEMPLATE_A_BANNER)} alt="" draggable={false} className="block h-auto w-full select-none" />
-      ) : template === "b" && (
-        decoration?.banner ? (
-          // แบนเนอร์ของลูกค้าเอง — แสดงตามสัดส่วนจริงของรูป ไม่มีข้อความทับ
-          // eslint-disable-next-line @next/next/no-img-element -- R2 upload, html-to-image needs a plain <img>
-          <img src={exportSafeSrc(decoration.banner)} alt="" draggable={false} className="block h-auto w-full select-none" />
-        ) : (
-          <div data-export-watermark className="grid aspect-[16/7] place-items-center border-b border-dashed border-white/25 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.04)_0_10px,transparent_10px_20px)] text-center">
-            <div className="flex flex-col items-center gap-[1.2cqw] px-[6%]">
-              <ImagePlus className="size-[clamp(20px,7cqw,40px)] text-white/45" aria-hidden />
-              <p className="text-[clamp(11px,3.4cqw,18px)] font-semibold text-white/70">พื้นที่แบนเนอร์ของคุณ</p>
-              <p className="text-[clamp(9px,2.4cqw,13px)] text-white/45">อัปโหลดแบนเนอร์ในขั้นตกแต่ง</p>
-            </div>
-          </div>
-        )
-      )}
+      {setting && <TemplateHeader setting={setting} decoration={decoration} game={game} skinIds={skinIds} sample={sample} />}
 
       {/* ตารางสกินของผู้ใช้ */}
       <div aria-hidden className="grid gap-px bg-black p-px" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>

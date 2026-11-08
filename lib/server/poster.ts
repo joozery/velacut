@@ -1,7 +1,8 @@
 import { MongoServerError } from "mongodb";
 import { getCatalog, type Catalog } from "@/lib/catalog";
 import { GAME_SLUGS, type GameSlug } from "@/lib/games";
-import { MAX_SKINS, MIN_SKINS, TEMPLATE_PRICES, payableTotal, type TemplateId } from "@/lib/pricing";
+import { MAX_SKINS, MIN_SKINS, payableTotal } from "@/lib/pricing";
+import { TEMPLATE_ID_RE } from "@/lib/templates";
 import { fromUnits, toUnits } from "@/lib/money";
 import { posterSignature, type PosterOrder } from "@/lib/account";
 import { RANKS } from "@/lib/ranks";
@@ -19,13 +20,15 @@ const num = (v: unknown, max = 1e9) => (typeof v === "number" && Number.isFinite
 function sanitizeDecoration(raw: unknown): Decoration | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const d = raw as Record<string, unknown>;
-  const rank = RANKS.some((r) => r.id === d.rank) ? (d.rank as Decoration["rank"]) : undefined;
+  const isRank = (v: unknown): v is NonNullable<Decoration["rank"]> => RANKS.some((r) => r.id === v);
+  const rank = isRank(d.rank) ? d.rank : undefined;
+  const peakRank = isRank(d.peakRank) ? d.peakRank : undefined;
   // แบนเนอร์รับเฉพาะรูปที่อัปโหลดผ่านระบบเรา
   const banner = typeof d.banner === "string" && isUploadedUrl(d.banner, "banners") ? d.banner : undefined;
   return {
     code: str(d.code, 40), heroes: num(d.heroes, 9999), price: num(d.price), winrate: num(d.winrate, 100), matches: num(d.matches),
     down: num(d.down), honor: num(d.honor), tagline: str(d.tagline, 120), accent: /^#[0-9a-f]{6}$/i.test(String(d.accent)) ? String(d.accent) : "#fcd34d",
-    coverId: str(d.coverId, 120), ...(rank ? { rank } : {}), ...(banner ? { banner } : {}),
+    coverId: str(d.coverId, 120), ...(rank ? { rank } : {}), ...(peakRank ? { peakRank } : {}), ...(banner ? { banner } : {}),
   };
 }
 
@@ -40,7 +43,8 @@ export function parsePosterInput(game: unknown, rawDoc: unknown, rawCols: unknow
   if (skins.length < MIN_SKINS || skins.length > MAX_SKINS || new Set(skins).size !== skins.length || skins.some((id) => !allowed.has(id))) {
     throw new UserError("กรุณาตรวจรายการสกินก่อนดาวน์โหลด");
   }
-  const template = (Object.keys(TEMPLATE_PRICES) as TemplateId[]).includes(d.template as TemplateId) ? (d.template as TemplateId) : null;
+  // แบบที่แอดมินสร้างเองมี id ไม่ตายตัว — ตรวจรูปแบบที่นี่ ส่วนการมีอยู่จริง/เปิดอยู่ตรวจตอนซื้อ
+  const template = typeof d.template === "string" && TEMPLATE_ID_RE.test(d.template) ? d.template : null;
   if (!template) throw new UserError("ไม่พบแบบป้ายนี้");
   const output = d.output === "watermark" ? "watermark" : "clean";
   const cols = Number(rawCols);
@@ -71,10 +75,13 @@ export async function purchasePoster(userId: string, input: ReturnType<typeof pa
 
   // ราคาและการเปิด/ปิดแบบป้ายอ่านจากหลังบ้านทุกครั้ง — ไม่เชื่อราคาจาก client
   const templates = await getTemplatesConfig();
-  if (!templates[doc.template].enabled) throw new UserError("แบบป้ายนี้ปิดให้บริการชั่วคราว กรุณาเลือกแบบอื่น");
+  const tpl = templates[doc.template];
+  if (!tpl) throw new UserError("ไม่พบแบบป้ายนี้ กรุณาเลือกแบบอื่น");
+  if (!tpl.enabled) throw new UserError("แบบป้ายนี้ปิดให้บริการชั่วคราว กรุณาเลือกแบบอื่น");
+  if (tpl.kind === "upload" && !doc.decoration?.banner) throw new UserError("แบบป้ายนี้ต้องอัปโหลดแบนเนอร์ของคุณก่อนดาวน์โหลด");
   const amount = toUnits(payableTotal(doc.skins.length, doc.template, doc.output, templates));
   const now = new Date();
-  const templateName = templates[doc.template].name;
+  const templateName = tpl.name;
   const tx: TxDoc = {
     _id: newId("PS"), userId, kind: "poster", status: "pending", amount: -amount,
     title: "สร้างป้าย Mobile Legends",

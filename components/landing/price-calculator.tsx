@@ -64,7 +64,7 @@ export function PriceCalculator() {
       {/* เทมเพลต */}
       <div className="mt-5">
         <p className="text-sm font-medium">{c.template}</p>
-        <div role="radiogroup" aria-label={c.template} className={cn("mt-2 grid gap-2", list.length === 1 ? "grid-cols-1" : list.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
+        <div role="radiogroup" aria-label={c.template} className={cn("mt-2 grid gap-2", list.length === 1 ? "grid-cols-1" : list.length === 2 || list.length === 4 ? "grid-cols-2" : "grid-cols-3")}>
           {list.map((id) => {
             const { price, compareAtPrice } = cfg[id];
             const off = discountPercent(price, compareAtPrice ?? undefined);
@@ -86,7 +86,7 @@ export function PriceCalculator() {
                     {fmt(p.discount, { n: off })}
                   </span>
                 )}
-                <span className={cn("block text-sm font-semibold", on && "text-primary")}>{id === "none" ? c.none : id.toUpperCase()}</span>
+                <span className={cn("block truncate text-sm font-semibold", on && "text-primary")}>{id === "none" ? c.none : cfg[id].name}</span>
                 <span className="mt-0.5 block text-[11px] text-muted-foreground tabular-nums">
                   {price ? fmt(p.plusCoins, { n: formatCoins(price) }) : "—"}
                   {compareAtPrice ? <s className="ml-1 opacity-70">{formatCoins(compareAtPrice)}</s> : null}

@@ -10,13 +10,13 @@ import { cn, fmt } from "@/lib/utils";
 const c = copy.rankPicker;
 
 /** เลือกแรงค์ของไอดีจากตราแรงค์ในเกม (กดซ้ำ = ยกเลิก) */
-export function RankPicker({ value, onChange, id }: { value?: RankId; onChange: (rank: RankId | undefined) => void; id: string }) {
+export function RankPicker({ value, onChange, id, label = c.label, hint = c.hint }: { value?: RankId; onChange: (rank: RankId | undefined) => void; id: string; label?: string; hint?: string }) {
   const tile =
     "flex flex-col items-center gap-1 rounded-2xl border-2 p-1.5 text-[10px] leading-tight font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
   return (
     <div role="group" aria-labelledby={`${id}-label`} className="grid gap-2">
-      <Label id={`${id}-label`}>{c.label}</Label>
-      <p className="-mt-1 text-xs text-muted-foreground">{c.hint}</p>
+      <Label id={`${id}-label`}>{label}</Label>
+      <p className="-mt-1 text-xs text-muted-foreground">{hint}</p>
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-4">
         <button
           type="button"

@@ -5,7 +5,8 @@ import { CoinIcon } from "@/components/shared/coin";
 import { copy } from "@/lib/copy";
 import { formatCoinsFixed } from "@/lib/format";
 import type { GameSlug } from "@/lib/games";
-import { PRICE_PER_SKIN, calcTotal, discountPercent, type TemplateId } from "@/lib/pricing";
+import { PRICE_PER_SKIN, calcTotal, discountPercent } from "@/lib/pricing";
+import type { TemplateKind } from "@/lib/templates";
 import { useEditorTemplates } from "./use-templates";
 import { cn, fmt } from "@/lib/utils";
 import { useEditorStore, useGameEditor } from "@/stores/editor-store";
@@ -16,22 +17,22 @@ import { useRequireSkins } from "./use-step-guard";
 const t = copy.editor.template;
 
 /** ภาพร่างโครงป้ายของแต่ละแบบ — สื่อโครงสร้าง ไม่ใช่ภาพจริง */
-function Sketch({ id, active }: { id: TemplateId; active: boolean }) {
+function Sketch({ kind, active }: { kind: TemplateKind; active: boolean }) {
   const cell = cn("rounded-[3px]", active ? "bg-primary/35" : "bg-foreground/15");
   return (
     <span aria-hidden className={cn("flex w-[4.5rem] shrink-0 flex-col gap-1 rounded-xl p-1.5 transition-colors", active ? "bg-primary/10" : "bg-surface-2")}>
-      {id === "a" && (
+      {kind === "banner" && (
         <span className={cn("relative flex h-6 flex-col justify-center gap-0.5 rounded-md px-1", active ? "bg-primary/60" : "bg-foreground/30")}>
           <span className="h-1 w-3/5 rounded-full bg-white/90" />
           <span className="h-1 w-2/5 rounded-full bg-white/60" />
         </span>
       )}
-      {id === "b" && (
+      {kind === "upload" && (
         <span className={cn("grid h-6 place-items-center rounded-md border border-dashed", active ? "border-primary/70 text-primary" : "border-foreground/30 text-foreground/40")}>
           <ImagePlus className="size-3" />
         </span>
       )}
-      <span className="grid flex-1 grid-cols-4 gap-0.5">{Array.from({ length: id === "none" ? 16 : 8 }, (_, i) => <span key={i} className={cn(cell, "aspect-[3/4]")} />)}</span>
+      <span className="grid flex-1 grid-cols-4 gap-0.5">{Array.from({ length: kind === "grid" ? 16 : 8 }, (_, i) => <span key={i} className={cn(cell, "aspect-[3/4]")} />)}</span>
     </span>
   );
 }
@@ -56,7 +57,7 @@ export function TemplateStep({ game }: { game: GameSlug }) {
       {/* preview */}
       <section className="editor-canvas flex min-w-0 flex-col items-center gap-4 p-5 sm:p-8 lg:overflow-y-auto lg:p-10">
         <div className="w-full max-w-[34rem]"><p className="text-[10px] font-semibold tracking-widest text-primary">02 / TEMPLATE</p><h1 className="mt-1 text-lg font-bold sm:text-xl">เลือกแบบที่ใช่สำหรับป้ายคุณ</h1></div>
-        <PosterPreview game={game} skinIds={skins} cols={viewCols} template={template} decoration={doc.decoration} className="max-w-[34rem]" />
+        <PosterPreview game={game} skinIds={skins} cols={viewCols} template={template} decoration={doc.decoration} sample className="max-w-[34rem]" />
         <p className="text-center text-xs text-muted-foreground">{t.previewNote}</p>
       </section>
 
@@ -87,7 +88,7 @@ export function TemplateStep({ game }: { game: GameSlug }) {
                   on ? "border-primary bg-primary-soft/50 shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-primary)_18%,transparent)]" : "border-border hover:border-primary/40 hover:bg-surface-2/50",
                 )}
               >
-                <Sketch id={id} active={on} />
+                <Sketch kind={opt.kind} active={on} />
                 <span className="flex min-w-0 flex-1 flex-col py-0.5">
                   <span className="flex items-start justify-between gap-2">
                     <span className={cn("text-sm font-bold", on && "text-primary")}>{opt.name}</span>
