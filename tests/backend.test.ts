@@ -829,6 +829,11 @@ test("templates: admin-made templates with layers are validated, priced and prot
   assert.equal(renderTokens("ราคา {price} บาท", { price: 0 }), null);
   assert.deepEqual(renderTokens("ราคา {price} บาท", { price: 9999 })?.map((p) => p.text).join(""), `ราคา ${(9999).toLocaleString("th-TH")} บาท`);
   assert.deepEqual(renderTokens("ขายด่วน", {})?.[0].text, "ขายด่วน");
+  assert.equal(renderTokens("ฮีโร่ {heroes} สกิน {skins}", { skins: 8 })?.map((p) => p.text).join(""), "ฮีโร่ - สกิน 8");
+  const { customerCanUpload } = await import("../lib/templates");
+  assert.equal(customerCanUpload(parsed.a), false, "เทมเพลต A ไม่เปิดให้ลูกค้าเปลี่ยนพื้นหลังโดยค่าเริ่มต้น");
+  assert.equal(customerCanUpload(parsed["t-test"]), true, "แบบที่สร้างเองเปิดให้อัปโหลดพื้นหลังโดยค่าเริ่มต้น");
+  assert.equal(customerCanUpload(tpl.parseTemplates({ "t-x": { ...custom, allowCustomerBg: false } })["t-x"]), false);
   const uses = templateUses(parsed["t-test"]);
   assert.ok(uses.tokens.has("price") && uses.peakRank && uses.accent && !uses.rank);
 

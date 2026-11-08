@@ -77,6 +77,7 @@ function parseOne(id: string, raw: Record<string, unknown>): TemplateSetting {
     compareAtPrice,
     // แบบที่สร้างเองไม่ใส่ภาพได้ (ใช้พื้นไล่สี) · เทมเพลต A ต้องมีภาพ
     ...(kind === "banner" ? { banner: !builtin && !raw.banner ? "" : bannerImage(raw.banner ?? builtin?.banner ?? DEFAULT_TEMPLATE_A_BANNER) } : {}),
+    ...(kind === "banner" ? { allowCustomerBg: raw.allowCustomerBg === undefined ? !builtin : raw.allowCustomerBg === true } : {}),
     ...(kind !== "grid" ? { layers: layersRaw.map((l) => parseLayer(l, label)) } : {}),
   };
 }

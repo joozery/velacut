@@ -5,7 +5,7 @@ import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { exportSafeSrc } from "@/lib/media-url";
 import { SAMPLE_RANK, rankImage, type RankId } from "@/lib/ranks";
-import { TOKENS, renderTokens, type Layer, type TemplateSetting, type TokenValues } from "@/lib/templates";
+import { TOKENS, customerCanUpload, renderTokens, type Layer, type TemplateSetting, type TokenValues } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import type { Decoration } from "@/stores/editor-store";
 
@@ -46,7 +46,8 @@ export function TemplateHeader({ setting, decoration, game, skinIds, sample, edi
   const skins = skinIds.map((id) => cat.skinById.get(id)).filter((s) => !!s);
   const cover = skins.find((s) => s.id === d.coverId) ?? [...skins].sort((a, b) => b.tierRank - a.tierRank)[0];
 
-  const image = setting.kind === "banner" ? setting.banner : d.banner;
+  // แบบ banner ที่เปิดให้ลูกค้าเปลี่ยนพื้นหลัง: ใช้รูปลูกค้าถ้ามี ไม่งั้นใช้ภาพของแอดมิน
+  const image = setting.kind === "banner" ? (customerCanUpload(setting) && d.banner) || setting.banner : d.banner;
 
   const layer = (l: Layer) => {
     const selected = editor?.selected === l.id;

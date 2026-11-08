@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Check, Eye, Minus, Plus, Redo2, ImagePlus, LayoutTemplate, Palette, Type, Undo2 } from "lucide-react";
 import { useEditorTemplates } from "./use-templates";
-import { templateUses } from "@/lib/templates";
+import { customerCanUpload, templateUses } from "@/lib/templates";
 import { BannerUpload } from "./banner-upload";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
@@ -49,13 +49,14 @@ export function DecorateStep({ game }: { game: GameSlug }) {
 
   const kind = tplCfg[doc.template]?.kind ?? "grid";
   const uses = templateUses(tplCfg[doc.template]);
+  const canUpload = customerCanUpload(tplCfg[doc.template]);
   const numFields = fields.filter(([key]) => uses.tokens.has(key));
   const hasText = uses.tokens.has("code") || uses.tokens.has("tagline") || numFields.length > 0 || uses.rank || uses.peakRank;
   const sectionsFor = (tool?: Tool) => ({ text: (!tool || tool === "text") && hasText, cover: (!tool || tool === "cover") && uses.cover, color: (!tool || tool === "color") && uses.accent });
 
   const poster = <PosterPreview game={game} skinIds={skins} cols={viewCols} template={doc.template} decoration={decoration} />;
 
-  const renderSettings = (prefix: string, tool?: Tool) => { const show = sectionsFor(tool); const nothing = kind === "banner" && tool !== "template" && !show.text && !show.cover && !show.color; return <>
+  const renderSettings = (prefix: string, tool?: Tool) => { const show = sectionsFor(tool); const nothing = kind === "banner" && tool !== "template" && !show.text && !show.cover && !show.color && !(canUpload && (!tool || tool === "cover")); return <>
         {!tool && <h2 className="text-lg font-bold">ตกแต่งป้ายของคุณ</h2>}
         {!tool && <p className="mt-1 text-xs text-muted-foreground">เปลี่ยนข้อมูลแล้วดูผลบนป้ายได้ทันที</p>}
         <div className="grid gap-4 pt-4">
@@ -68,6 +69,7 @@ export function DecorateStep({ game }: { game: GameSlug }) {
           </div>}
           {kind === "grid" && tool !== "template" && <p className="rounded-2xl bg-primary-soft p-4 text-sm text-primary-soft-foreground">แบบนี้แสดงเฉพาะตารางสกิน เลือกแบบที่มีหัวป้ายเพื่อเพิ่มข้อมูลไอดี</p>}
           {kind === "upload" && tool !== "template" && <BannerUpload value={decoration.banner} onChange={(banner) => patch({ banner })} />}
+          {kind === "banner" && canUpload && (!tool || tool === "cover") && <BannerUpload title="พื้นหลังหัวป้าย (ไม่บังคับ)" hint="ข้อความและแรงค์จะวางทับบนรูปนี้" value={decoration.banner} onChange={(banner) => patch({ banner })} />}
           {show.text && <>
             {uses.tokens.has("code") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-code`}>ชื่อป้าย / รหัสไอดี</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-code`} value={decoration.code} maxLength={40} placeholder="เช่น ไอดี MLBB 001" onChange={(e) => patch({ code: e.target.value })} /></div>}
             {numFields.length > 0 && <div className="grid grid-cols-2 gap-3">

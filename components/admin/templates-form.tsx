@@ -9,7 +9,7 @@ import { getCatalog } from "@/lib/catalog";
 import { formatCoinsFixed } from "@/lib/format";
 import { discountPercent, type TemplateId } from "@/lib/pricing";
 import {
-  DEFAULT_TEMPLATE_A_BANNER, MAX_TEMPLATES, isBuiltinTemplate, newLayerId, starterLayers, templateIds,
+  DEFAULT_TEMPLATE_A_BANNER, MAX_TEMPLATES, customerCanUpload, isBuiltinTemplate, newLayerId, starterLayers, templateIds,
   type Layer, type TemplateKind, type TemplateSetting, type TemplatesConfig,
 } from "@/lib/templates";
 import { saveTemplatesAction } from "@/app/admin/actions";
@@ -96,7 +96,7 @@ export function TemplatesForm({ initial, used }: { initial: TemplatesConfig; use
     });
     setEditing(id);
   };
-  const create = () => insert({ enabled: false, kind: "banner", name: `แบบใหม่ ${ids.length}`, desc: "", price: 15, compareAtPrice: null, banner: "", layers: starterLayers() });
+  const create = () => insert({ enabled: false, kind: "banner", name: `แบบใหม่ ${ids.length}`, desc: "", price: 15, compareAtPrice: null, banner: "", allowCustomerBg: true, layers: starterLayers() });
   const duplicate = (id: TemplateId) => {
     const t = cfg[id];
     insert({ ...t, enabled: false, name: `${t.name} (สำเนา)`.slice(0, 40), layers: (t.layers ?? []).map((l) => ({ ...l, id: newLayerId() })) }, id);
@@ -173,6 +173,12 @@ export function TemplatesForm({ initial, used }: { initial: TemplatesConfig; use
                   </div>
                 )}
                 {t.kind === "banner" && <BannerField name={t.name} optional={!builtin} value={t.banner ?? (builtin ? DEFAULT_TEMPLATE_A_BANNER : "")} onChange={(banner) => set(id, { banner })} />}
+                {t.kind === "banner" && (
+                  <label className="flex cursor-pointer items-start justify-between gap-3 rounded-xl bg-surface-2/60 p-3">
+                    <span className="grid gap-0.5"><span className="text-xs font-medium">ให้ลูกค้าอัปโหลดพื้นหลังเองได้</span><span className="text-[11px] text-muted-foreground">ลูกค้าใส่รูปของตัวเองแทนภาพหัวป้ายนี้ได้ (ไม่บังคับ) ข้อความที่จัดวางไว้ยังวางทับเหมือนเดิม</span></span>
+                    <Switch checked={customerCanUpload(t)} onChange={(v) => set(id, { allowCustomerBg: v })} label={`ให้ลูกค้าอัปโหลดพื้นหลังของ ${t.name}`} />
+                  </label>
+                )}
                 <div className="grid gap-1.5"><Label htmlFor={`${uid}-${id}-name`} className="text-xs">ชื่อที่แสดง</Label><Input id={`${uid}-${id}-name`} value={t.name} maxLength={40} onChange={(e) => set(id, { name: e.target.value })} /></div>
                 <div className="grid gap-1.5"><Label htmlFor={`${uid}-${id}-desc`} className="text-xs">คำอธิบาย</Label><Textarea id={`${uid}-${id}-desc`} rows={2} value={t.desc} maxLength={160} onChange={(e) => set(id, { desc: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">

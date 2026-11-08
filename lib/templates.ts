@@ -47,6 +47,8 @@ export type TemplateSetting = {
   kind: TemplateKind;
   /** ภาพหัวป้าย (ชนิด banner) — แอดมินอัปโหลดเองจากหลังบ้าน */
   banner?: string;
+  /** ชนิด banner: ให้ลูกค้าอัปโหลดพื้นหลังแทนภาพของแอดมินได้ (ไม่บังคับ) — ไม่ระบุ = อนุญาตเมื่อแอดมินไม่ได้ใส่ภาพ */
+  allowCustomerBg?: boolean;
   /** ชิ้นส่วนที่วางบนหัวป้าย เรียงจากล่างขึ้นบน */
   layers?: Layer[];
 };
@@ -67,6 +69,10 @@ export const DEFAULT_TEMPLATES: TemplatesConfig = {
   a: { enabled: true, kind: "banner", name: "เทมเพลต A", desc: "หัวป้ายพร้อมข้อมูลไอดี ราคา และภาพตัวละครเป็นพื้นหลัง", price: 15, compareAtPrice: 25, banner: DEFAULT_TEMPLATE_A_BANNER, layers: [] },
   b: { enabled: true, kind: "upload", name: "เทมเพลต B", desc: "หัวป้ายว่างไว้ให้ใส่แบนเนอร์ของคุณเอง ไม่มีข้อความทับ", price: 25, compareAtPrice: 45, layers: [] },
 };
+
+/** ลูกค้าอัปโหลดภาพหัวป้ายเองได้ไหม (upload = บังคับ · banner = ไม่บังคับ ถ้าเปิดไว้) */
+export const customerCanUpload = (t: TemplateSetting | undefined) =>
+  t?.kind === "upload" || (t?.kind === "banner" && (t.allowCustomerBg ?? !t.banner));
 
 export const templateIds = (cfg: TemplatesConfig): TemplateId[] => Object.keys(cfg);
 export const enabledTemplates = (cfg: TemplatesConfig) => templateIds(cfg).filter((id) => cfg[id].enabled);
@@ -105,7 +111,9 @@ export function renderTokens(text: string, values: TokenValues): { text: string;
     if (m.index > last) parts.push({ text: text.slice(last, m.index), value: false });
     tokens++;
     const v = formatValue(values[m[1]]);
-    if (v) { filled++; parts.push({ text: v, value: true }); }
+    // ช่องที่ว่างในบรรทัดที่มีค่าอื่น → "-" ไม่ให้ข้อความแหว่ง
+    if (v) filled++;
+    parts.push({ text: v || "-", value: true });
     last = m.index + m[0].length;
   }
   if (last < text.length) parts.push({ text: text.slice(last), value: false });
