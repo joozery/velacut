@@ -25,6 +25,17 @@ export type TextLayer = LayerBase & {
   align: LayerAlign;
   /** ขอบดำรอบตัวอักษร ให้อ่านง่ายบนภาพพื้นหลัง */
   shadow: boolean;
+  strokeColor?: string;
+  /** ความหนาขอบ เป็น % ของขนาดตัวอักษร */
+  strokeWidth?: number;
+  italic?: boolean;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+  /** ระยะขอบและมุมโค้ง เป็น % ของความกว้างป้าย */
+  backgroundPadding?: number;
+  backgroundRadius?: number;
+  /** ความกว้างกล่อง เป็น % ของป้าย · 0 = ตามข้อความ */
+  backgroundWidth?: number;
 };
 export type RankLayer = LayerBase & {
   type: "rank";
@@ -127,7 +138,7 @@ export function templateUses(t: TemplateSetting | undefined) {
   for (const l of t?.layers ?? []) {
     if (l.type === "text") {
       for (const m of l.text.matchAll(TOKEN_RE)) if (isToken(m[1])) tokens.add(m[1]);
-      if (l.color === "accent" || l.valueColor === "accent") accent = true;
+      if (l.color === "accent" || l.valueColor === "accent" || l.strokeColor === "accent" || l.backgroundColor === "accent") accent = true;
     } else if (l.type === "rank") { if (l.source === "peakRank") peakRank = true; else rank = true; }
     else cover = true;
   }
@@ -155,3 +166,30 @@ export const starterLayers = (): Layer[] => [
   newTextLayer({ text: "{tagline}", x: 50, y: 85, size: 3.2, color: "accent" }),
   newRankLayer({ source: "peakRank", x: 89, y: 70, size: 12 }),
 ];
+
+/** จัดวางตาม velavut.jpg — ใช้พื้นหลังเปล่าเพื่อให้แก้ข้อความได้ทุกชิ้น */
+export const velavutLayers = (): Layer[] => {
+  const text = (patch: Partial<TextLayer>) => newTextLayer({ italic: true, strokeWidth: 10, strokeColor: "#000000", ...patch });
+  const box = { backgroundColor: "#000000", backgroundOpacity: 55, backgroundPadding: 0.5, backgroundRadius: 1.5 };
+  return [
+    text({ text: "Server: Thailand", x: 98, y: 5.5, size: 3.4, align: "right", color: "#ff9500" }),
+    text({ text: "รหัสสินค้า {code}", x: 98, y: 13, size: 4, align: "right", valueColor: "#ff9500" }),
+    text({ text: "{tagline}", x: 98, y: 20, size: 2.5, align: "right" }),
+    newRankLayer({ x: 79, y: 38, size: 15 }),
+    text({ text: "{honor}", x: 79, y: 51, size: 4 }),
+    newRankLayer({ x: 93, y: 29, size: 8 }),
+    text({ text: "แรงค์ปัจจุบัน", x: 93, y: 37, size: 1.9 }),
+    newRankLayer({ source: "peakRank", x: 93, y: 45, size: 8 }),
+    text({ text: "แรงค์สูงสุด", x: 93, y: 53, size: 1.9 }),
+    ...([{ x: 76, y: 61, token: "{heroes}", label: "ฮีโร่ทั้งหมด" },
+      { x: 91, y: 61, token: "{skins}", label: "สกินทั้งหมด" },
+      { x: 76, y: 79, token: "{matches}", label: "เล่นทั้งหมด" },
+      { x: 91, y: 79, token: "{winrate}%", label: "อัตราชนะ" }].flatMap(({ x, y, token, label }) => [
+        text({ ...box, text: token, x, y, size: 4, color: "#ff9500", backgroundWidth: 14 }),
+        text({ ...box, text: label, x, y: y + 9, size: 2.2, backgroundWidth: 14 }),
+      ])),
+    text({ ...box, text: "ราคา {price} บาท", x: 44, y: 82, size: 5.5, valueColor: "#ff9500", backgroundWidth: 44 }),
+    text({ ...box, text: "วางดาวน์ {down} บาท", x: 44, y: 94, size: 2.8, valueColor: "#ff9500", backgroundWidth: 44 }),
+    text({ ...box, text: "เชื่อม Google และรอเปลี่ยน", x: 83.5, y: 95, size: 2, backgroundWidth: 29 }),
+  ];
+};

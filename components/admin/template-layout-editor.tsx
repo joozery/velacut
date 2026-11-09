@@ -95,9 +95,31 @@ function TextProps({ layer, set }: { layer: TextLayer; set: (patch: Partial<Text
       <ColorField label="สีข้อความ" value={layer.color} onChange={(color) => set({ color: color || "#ffffff" })} />
       <ColorField label="สีของข้อมูลลูกค้า (ตัวเลข/ชื่อ)" value={layer.valueColor} emptyLabel="เหมือนข้อความ" onChange={(valueColor) => set({ valueColor })} />
       <label className="flex cursor-pointer items-center justify-between gap-3 text-xs font-medium">
-        ขอบดำรอบตัวอักษร
+        เส้นขอบตัวอักษร (Stroke)
         <input type="checkbox" checked={layer.shadow} onChange={(e) => set({ shadow: e.target.checked })} className="size-4 accent-[var(--color-primary)]" />
       </label>
+      {layer.shadow && <>
+        <ColorField label="สีเส้นขอบ" value={layer.strokeColor ?? "#000000"} onChange={(strokeColor) => set({ strokeColor })} />
+        <NumberField label="ความหนาเส้นขอบ" value={layer.strokeWidth ?? 4} min={0} max={20} unit="%" onChange={(strokeWidth) => set({ strokeWidth })} />
+      </>}
+      <label className="flex cursor-pointer items-center justify-between gap-3 text-xs font-medium">
+        ตัวเอียง
+        <input type="checkbox" checked={layer.italic ?? false} onChange={(e) => set({ italic: e.target.checked })} className="size-4 accent-[var(--color-primary)]" />
+      </label>
+      <div className="grid gap-4 border-t border-border pt-4">
+        <label className="flex cursor-pointer items-center justify-between gap-3 text-xs font-medium">
+          กล่องพื้นหลังข้อความ
+          <input type="checkbox" checked={!!layer.backgroundColor} onChange={(e) => set({ backgroundColor: e.target.checked ? "#000000" : "" })} className="size-4 accent-[var(--color-primary)]" />
+        </label>
+        {layer.backgroundColor && <>
+          <ColorField label="สีพื้นหลังข้อความ" value={layer.backgroundColor} onChange={(backgroundColor) => set({ backgroundColor })} />
+          <NumberField label="ความทึบพื้นหลัง" value={layer.backgroundOpacity ?? 50} min={0} max={100} unit="%" onChange={(backgroundOpacity) => set({ backgroundOpacity })} />
+          <NumberField label="ระยะขอบกล่อง" value={layer.backgroundPadding ?? 1} min={0} max={10} unit="%" onChange={(backgroundPadding) => set({ backgroundPadding })} />
+          <NumberField label="มุมโค้งกล่อง" value={layer.backgroundRadius ?? 1.5} min={0} max={20} unit="%" onChange={(backgroundRadius) => set({ backgroundRadius })} />
+          <NumberField label="ความกว้างกล่อง" value={layer.backgroundWidth ?? 0} min={0} max={100} unit="%" onChange={(backgroundWidth) => set({ backgroundWidth })} />
+          <p className="text-[11px] text-muted-foreground">ความกว้าง 0 = พอดีข้อความ · ตั้งความกว้างเท่ากันเพื่อเรียงกล่องเป็นคอลัมน์แบบป้ายตัวอย่าง</p>
+        </>}
+      </div>
     </>
   );
 }
@@ -167,21 +189,21 @@ export function TemplateLayoutEditor({ open, onOpenChange, setting, onChange, sk
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl gap-0 p-0 sm:rounded-3xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="top-0 left-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="border-b border-border px-6 pt-5 pb-4 pr-14">
           <DialogTitle className="text-lg">จัดวางหัวป้าย · {setting.name}</DialogTitle>
           <DialogDescription className="mt-1 text-xs">ลากชิ้นส่วนบนภาพเพื่อย้าย · ปุ่มลูกศรขยับทีละนิด (Shift = ทีละมาก) · ภาพนี้ใช้ข้อมูลตัวอย่าง</DialogDescription>
         </div>
-        <div className="grid min-h-0 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <div className="grid min-h-0 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_21rem] lg:overflow-hidden">
           {/* พื้นที่จัดวาง */}
-          <div className="flex min-w-0 flex-col gap-3 bg-surface-2/60 p-4 sm:p-6">
+          <div className="flex min-h-0 min-w-0 flex-col gap-3 bg-surface-2/60 p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain">
             <div
               ref={canvas}
               tabIndex={0}
               onKeyDown={onKey}
               onPointerDown={(e) => { if (e.target === e.currentTarget || !(e.target as HTMLElement).closest("[data-layer]")) setSelected(undefined); }}
               aria-label="พื้นที่จัดวางหัวป้าย"
-              className="@container relative overflow-hidden rounded-xl bg-zinc-950 text-white shadow-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="@container relative shrink-0 overflow-hidden rounded-xl bg-zinc-950 text-white shadow-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <TemplateHeader
                 setting={setting}
@@ -205,11 +227,11 @@ export function TemplateLayoutEditor({ open, onOpenChange, setting, onChange, sk
                 <span aria-hidden className="pointer-events-none absolute inset-x-0 h-px bg-sky-400/40" style={{ top: `${sel.y}%` }} />
               </>}
             </div>
-            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Move className="size-3.5" aria-hidden />ขนาดตัวอักษรและตำแหน่งคิดเป็น % ของป้าย — ป้ายจริงจะออกมาสัดส่วนเดียวกันทุกขนาด</p>
+            <p className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground"><Move className="size-3.5" aria-hidden />ขนาดตัวอักษรและตำแหน่งคิดเป็น % ของป้าย — ป้ายจริงจะออกมาสัดส่วนเดียวกันทุกขนาด</p>
           </div>
 
           {/* แผงชิ้นส่วน */}
-          <div className="flex min-h-0 flex-col border-t border-border lg:max-h-[calc(100dvh-10rem)] lg:border-t-0 lg:border-l">
+          <div className="flex min-h-0 flex-col border-t border-border lg:overflow-hidden lg:border-t-0 lg:border-l">
             <div className="grid gap-3 border-b border-border p-4">
               <div className="grid grid-cols-3 gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => add(newTextLayer())}><Plus aria-hidden />ข้อความ</Button>

@@ -9,7 +9,7 @@ import { getCatalog } from "@/lib/catalog";
 import { formatCoinsFixed } from "@/lib/format";
 import { discountPercent, type TemplateId } from "@/lib/pricing";
 import {
-  DEFAULT_TEMPLATE_A_BANNER, MAX_TEMPLATES, customerCanUpload, isBuiltinTemplate, newLayerId, starterLayers, templateIds,
+  DEFAULT_TEMPLATE_A_BANNER, MAX_TEMPLATES, customerCanUpload, isBuiltinTemplate, newLayerId, starterLayers, velavutLayers, templateIds,
   type Layer, type TemplateKind, type TemplateSetting, type TemplatesConfig,
 } from "@/lib/templates";
 import { saveTemplatesAction } from "@/app/admin/actions";
@@ -97,6 +97,7 @@ export function TemplatesForm({ initial, used }: { initial: TemplatesConfig; use
     setEditing(id);
   };
   const create = () => insert({ enabled: false, kind: "banner", name: `แบบใหม่ ${ids.length}`, desc: "", price: 15, compareAtPrice: null, banner: "", allowCustomerBg: true, layers: starterLayers() });
+  const createVelavut = () => insert({ enabled: false, kind: "banner", name: "แบบ Velavut", desc: "ข้อความด้านขวา สถิติ 2 คอลัมน์ และราคาด้านล่าง", price: 15, compareAtPrice: null, banner: "/images/velavut-background.svg", allowCustomerBg: true, layers: velavutLayers() });
   const duplicate = (id: TemplateId) => {
     const t = cfg[id];
     insert({ ...t, enabled: false, name: `${t.name} (สำเนา)`.slice(0, 40), layers: (t.layers ?? []).map((l) => ({ ...l, id: newLayerId() })) }, id);
@@ -128,7 +129,10 @@ export function TemplatesForm({ initial, used }: { initial: TemplatesConfig; use
     <div className="pb-24">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">{ids.length} แบบ · เปิดอยู่ {enabledCount} แบบ · ลำดับการ์ด = ลำดับที่ลูกค้าเห็น</p>
-        <Button type="button" onClick={create}><Plus aria-hidden />สร้างแบบใหม่</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={createVelavut}><LayoutTemplate aria-hidden />เพิ่มแบบตามภาพ Velavut</Button>
+          <Button type="button" onClick={create}><Plus aria-hidden />สร้างแบบใหม่</Button>
+        </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">

@@ -11,8 +11,15 @@ import type { Decoration } from "@/stores/editor-store";
 
 const SAMPLE_PEAK_RANK: RankId = "mythic-immortal";
 const DEFAULT_ACCENT = "#fcd34d";
-/** ขอบดำรอบตัวอักษร (html-to-image รองรับ text-shadow ไม่รองรับ paint-order) */
-const OUTLINE = "0 0.04em 0 #000, 0 -0.04em 0 #000, 0.04em 0 0 #000, -0.04em 0 0 #000, 0.03em 0.03em 0 #000, -0.03em 0.03em 0 #000, 0.03em -0.03em 0 #000, -0.03em -0.03em 0 #000, 0 0.08em 0.2em rgb(0 0 0 / 0.6)";
+/** ใช้ text-shadow เพื่อให้ขอบติดไปกับภาพที่ส่งออกด้วย */
+function textOutline(width: number, color: string) {
+  if (width <= 0) return undefined;
+  const radius = width / 100;
+  return Array.from({ length: 24 }, (_, i) => {
+    const angle = i * Math.PI / 12;
+    return `${Math.cos(angle) * radius}em ${Math.sin(angle) * radius}em 0 ${color}`;
+  }).join(", ");
+}
 const SHIFT_X = { left: "0%", center: "-50%", right: "-100%" } as const;
 
 export type LayerEditor = {
@@ -60,7 +67,13 @@ export function TemplateHeader({ setting, decoration, game, skinIds, sample, edi
       const parts = renderTokens(l.text, values);
       if (!parts) return null;
       return (
-        <div key={l.id} {...common} style={{ left: `${l.x}%`, top: `${l.y}%`, transform: `translate(${SHIFT_X[l.align]},-50%)`, fontSize: `${l.size}cqw`, fontWeight: l.weight, color: paint(l.color), textAlign: l.align, lineHeight: 1.15, whiteSpace: "pre", textShadow: l.shadow ? OUTLINE : undefined }}>
+        <div key={l.id} {...common} style={{ left: `${l.x}%`, top: `${l.y}%`, transform: `translate(${SHIFT_X[l.align]},-50%)`, fontSize: `${l.size}cqw`, fontWeight: l.weight, color: paint(l.color), textAlign: l.align, lineHeight: 1.15, whiteSpace: "pre", fontStyle: l.italic ? "italic" : undefined,
+          textShadow: l.shadow ? textOutline(l.strokeWidth ?? 4, paint(l.strokeColor || "#000000")) : undefined,
+          width: l.backgroundWidth ? `${l.backgroundWidth}cqw` : undefined,
+          boxSizing: "border-box",
+          padding: l.backgroundColor ? `${l.backgroundPadding ?? 1}cqw` : undefined,
+          isolation: "isolate" }}>
+          {l.backgroundColor && <span aria-hidden style={{ position: "absolute", inset: 0, zIndex: -1, backgroundColor: paint(l.backgroundColor), opacity: (l.backgroundOpacity ?? 50) / 100, borderRadius: `${l.backgroundRadius ?? 1.5}cqw`, pointerEvents: "none" }} />}
           {parts.map((p, i) => <span key={i} style={p.value && l.valueColor ? { color: paint(l.valueColor) } : undefined}>{p.text}</span>)}
         </div>
       );

@@ -26,7 +26,7 @@ const text = (v: unknown, label: string, max: number, required: boolean) => {
 
 const bannerImage = (v: unknown) => {
   const s = String(v ?? "").trim();
-  if (!/^\/(images|logo)\/[\w-]+(\/[\w-]+)*\.(webp|png|jpe?g|avif)$/.test(s) && !isUploadedUrl(s, "templates")) throw new UserError("ภาพหัวป้ายต้องเป็นรูปในเว็บหรือรูปที่อัปโหลดผ่านระบบ");
+  if (!/^\/(images|logo)\/[\w-]+(\/[\w-]+)*\.(webp|png|jpe?g|avif)$/.test(s) && s !== "/images/velavut-background.svg" && !isUploadedUrl(s, "templates")) throw new UserError("ภาพหัวป้ายต้องเป็นรูปในเว็บหรือรูปที่อัปโหลดผ่านระบบ");
   return s;
 };
 
@@ -53,6 +53,13 @@ function parseLayer(raw: unknown, label: string): Layer {
     ...base, type: "text", text: body, size: clamp(l.size, 0.5, 20, 4),
     weight: l.weight === 400 || l.weight === 600 ? l.weight : 800,
     color: color(l.color, "#ffffff"), valueColor: color(l.valueColor, "", true),
+    strokeColor: color(l.strokeColor, "#000000"), strokeWidth: clamp(l.strokeWidth ?? 4, 0, 20, 4),
+    italic: l.italic === true,
+    backgroundColor: color(l.backgroundColor, "", true),
+    backgroundOpacity: clamp(l.backgroundOpacity ?? 50, 0, 100, 50),
+    backgroundPadding: clamp(l.backgroundPadding ?? 1, 0, 10, 1),
+    backgroundRadius: clamp(l.backgroundRadius ?? 1.5, 0, 20, 1.5),
+    backgroundWidth: clamp(l.backgroundWidth ?? 0, 0, 100, 0),
     align: l.align === "left" || l.align === "right" ? l.align : "center", shadow: l.shadow !== false,
   };
 }
