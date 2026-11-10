@@ -9,7 +9,6 @@ import {
   Download,
   Layers,
   MessageCircle,
-  ScanSearch,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -128,19 +127,19 @@ export async function Stats() {
 
 /* ─────────────── Showcase ─────────────── */
 type CalloutKey = keyof typeof L.showcase.callouts;
-/** ภาพป้ายตัวอย่างใน section 01 (public/logo/bannerexam.png, 1641×959) */
-const SHOWCASE_POSTER = { src: "/logo/bannerexam.png", width: 1641, height: 959 } as const;
+/** ภาพป้ายตัวอย่างใน section 01 (public/velavut.jpg, 2048×1267) */
+const SHOWCASE_POSTER = { src: "/velavut.jpg", width: 2048, height: 1267 } as const;
 
 /**
  * ตำแหน่งหมุดบนภาพป้าย (x/y เป็น % ของภาพ) เรียงตามลำดับในรายการด้านขวา
  * หมุดที่ชี้ข้อความวางคร่อมขอบภาพหรือขอบกรอบ เพื่อไม่ให้บังตัวหนังสือ
  */
 const MARKERS: { key: CalloutKey; part: "banner" | "grid"; x: number; y: number }[] = [
-  { key: "details", part: "banner", x: 0, y: 25 },
-  { key: "price", part: "banner", x: 23.5, y: 72 },
+  { key: "details", part: "banner", x: 100, y: 75 },
+  { key: "price", part: "banner", x: 23, y: 82 },
   { key: "skins", part: "grid", x: 0, y: 50 },
-  { key: "hero", part: "banner", x: 57, y: 12 },
-  { key: "rank", part: "banner", x: 100, y: 62 },
+  { key: "hero", part: "banner", x: 30, y: 12 },
+  { key: "rank", part: "banner", x: 70.5, y: 38 },
 ];
 
 /** สกินในกริดใต้ป้าย: มือถือ 8 × 2, จอใหญ่ 12 × 2 */
@@ -268,7 +267,6 @@ function MiniPanel({ icon, label, tag, children }: { icon: React.ReactNode; labe
 
 export async function Features() {
   const f = L.features;
-  const detected = featuredFromCatalog(await getServerCatalog(), 4, 4);
   return (
     <Section id="features" className="bg-background">
       <SectionTitle title={f.title} highlight={f.titleHighlight} description={f.description} />
@@ -277,22 +275,7 @@ export async function Features() {
           <DemoGrid skins={await demoSkins(16)} />
         </BentoCard>
 
-        <BentoCard title={f.detect.title} desc={f.detect.desc}>
-          <MiniPanel icon={<ScanSearch aria-hidden />} label={f.detect.label} tag={f.sampleTag}>
-            <Stagger as="ul" gap={0.12} delay={0.3} className="divide-y divide-border">
-              {detected.map((s) => (
-                <StaggerItem as="li" key={s.id} className="flex items-center gap-3 px-4 py-2">
-                  <SkinThumb skin={s} compact hideTier className="w-8 shrink-0 rounded-md" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{s.name}</span>
-                  <Check className="size-4 text-success" aria-hidden />
-                </StaggerItem>
-              ))}
-            </Stagger>
-            <p className="border-t border-border px-4 py-2 text-xs font-medium text-success">{fmt(f.detect.found, { n: detected.length })}</p>
-          </MiniPanel>
-        </BentoCard>
-
-        <BentoCard title={f.decorate.title} desc={f.decorate.desc}>
+        <BentoCard title={f.decorate.title} desc={f.decorate.desc} className="md:col-span-2">
           <MiniPanel icon={<Layers aria-hidden />} label={f.decorate.label} tag={f.sampleTag}>
             <div className="p-3">
               <PosterMock compact />
@@ -309,7 +292,7 @@ export async function Features() {
 
 /* ─────────────── Steps ─────────────── */
 export function Steps() {
-  const icons = [ScanSearch, Layers, Download];
+  const icons = [Images, Layers, Download];
   return (
     <Section id="steps" className="bg-surface py-8 sm:py-10">
       <div className="mx-auto max-w-7xl">
