@@ -46,7 +46,7 @@ export type RankLayer = LayerBase & {
 };
 export type CoverLayer = LayerBase & {
   type: "cover";
-  /** ความกว้างภาพหน้าปก เป็น % ของความกว้างป้าย (สัดส่วน 3:4) */
+  /** ความกว้างภาพหน้าปก เป็น % ของความกว้างป้าย (สัดส่วนการ์ดสกิน 200:325) */
   size: number;
   radius: number;
 };
@@ -65,6 +65,10 @@ export type TemplateSetting = {
 };
 
 export const DEFAULT_TEMPLATE_A_BANNER = "/logo/bannerexam.png";
+/** พื้นหลังแบบ Velavut (texture ดำ) — แบบที่บันทึกไว้ก่อนหน้าใช้ .svg จึงแปลงเป็นไฟล์ใหม่ตอนแสดงผล */
+export const VELAVUT_BANNER = "/images/velavut-background.jpg";
+const LEGACY_VELAVUT_BANNER = "/images/velavut-background.svg";
+export const resolveBanner = (src: string | undefined) => (src === LEGACY_VELAVUT_BANNER ? VELAVUT_BANNER : src);
 /** ลำดับของ key ใน object = ลำดับที่แสดงให้ลูกค้าเห็น */
 export type TemplatesConfig = Record<TemplateId, TemplateSetting>;
 

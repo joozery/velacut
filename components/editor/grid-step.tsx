@@ -22,7 +22,7 @@ function GridSkeleton() {
   return (
     <div role="status" aria-busy aria-label={g.loading} className="mx-auto grid w-full max-w-md grid-cols-3 gap-2">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="aspect-[3/4] animate-pulse rounded-xl bg-surface-2" />
+        <div key={i} className="aspect-[200/325] animate-pulse rounded-xl bg-surface-2" />
       ))}
     </div>
   );

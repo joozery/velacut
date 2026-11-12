@@ -9,7 +9,7 @@ import { getCatalog } from "@/lib/catalog";
 import { formatCoinsFixed } from "@/lib/format";
 import { discountPercent, type TemplateId } from "@/lib/pricing";
 import {
-  DEFAULT_TEMPLATE_A_BANNER, MAX_TEMPLATES, customerCanUpload, isBuiltinTemplate, newLayerId, starterLayers, velavutLayers, templateIds,
+  DEFAULT_TEMPLATE_A_BANNER, MAX_TEMPLATES, customerCanUpload, isBuiltinTemplate, newLayerId, starterLayers, velavutLayers, VELAVUT_BANNER, resolveBanner, templateIds,
   type Layer, type TemplateKind, type TemplateSetting, type TemplatesConfig,
 } from "@/lib/templates";
 import { saveTemplatesAction } from "@/app/admin/actions";
@@ -97,7 +97,7 @@ export function TemplatesForm({ initial, used }: { initial: TemplatesConfig; use
     setEditing(id);
   };
   const create = () => insert({ enabled: false, kind: "banner", name: `แบบใหม่ ${ids.length}`, desc: "", price: 15, compareAtPrice: null, banner: "", allowCustomerBg: true, layers: starterLayers() });
-  const createVelavut = () => insert({ enabled: false, kind: "banner", name: "แบบ Velavut", desc: "ข้อความด้านขวา สถิติ 2 คอลัมน์ และราคาด้านล่าง", price: 15, compareAtPrice: null, banner: "/images/velavut-background.svg", allowCustomerBg: true, layers: velavutLayers() });
+  const createVelavut = () => insert({ enabled: false, kind: "banner", name: "แบบ Velavut", desc: "ข้อความด้านขวา สถิติ 2 คอลัมน์ และราคาด้านล่าง", price: 15, compareAtPrice: null, banner: VELAVUT_BANNER, allowCustomerBg: true, layers: velavutLayers() });
   const duplicate = (id: TemplateId) => {
     const t = cfg[id];
     insert({ ...t, enabled: false, name: `${t.name} (สำเนา)`.slice(0, 40), layers: (t.layers ?? []).map((l) => ({ ...l, id: newLayerId() })) }, id);
@@ -176,7 +176,7 @@ export function TemplatesForm({ initial, used }: { initial: TemplatesConfig; use
                     </div>
                   </div>
                 )}
-                {t.kind === "banner" && <BannerField name={t.name} optional={!builtin} value={t.banner ?? (builtin ? DEFAULT_TEMPLATE_A_BANNER : "")} onChange={(banner) => set(id, { banner })} />}
+                {t.kind === "banner" && <BannerField name={t.name} optional={!builtin} value={resolveBanner(t.banner) ?? (builtin ? DEFAULT_TEMPLATE_A_BANNER : "")} onChange={(banner) => set(id, { banner })} />}
                 {t.kind === "banner" && (
                   <label className="flex cursor-pointer items-start justify-between gap-3 rounded-xl bg-surface-2/60 p-3">
                     <span className="grid gap-0.5"><span className="text-xs font-medium">ให้ลูกค้าอัปโหลดพื้นหลังเองได้</span><span className="text-[11px] text-muted-foreground">ลูกค้าใส่รูปของตัวเองแทนภาพหัวป้ายนี้ได้ (ไม่บังคับ) ข้อความที่จัดวางไว้ยังวางทับเหมือนเดิม</span></span>

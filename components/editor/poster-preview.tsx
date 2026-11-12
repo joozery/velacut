@@ -69,7 +69,7 @@ export function PosterPreview({
       {setting && <TemplateHeader setting={setting} decoration={decoration} game={game} skinIds={skinIds} sample={sample} />}
 
       {/* ตารางสกินของผู้ใช้ */}
-      <div aria-hidden className="grid gap-px bg-black p-px" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+      <div aria-hidden className="grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {skins.map((skin) => (
           <SkinThumb key={skin.id} skin={skin} hideTier compact size="lg" sizes="160px" watermark exportSafe className="rounded-none" />
         ))}

@@ -33,7 +33,7 @@ export function SkinPlaceholder({
   compact?: boolean;
 }) {
   return (
-    <div className={cn("relative aspect-[3/4] overflow-hidden rounded-xl bg-gradient-to-br text-white", placeholderGradient(seed), className)}>
+    <div className={cn("relative aspect-[200/325] overflow-hidden rounded-xl bg-gradient-to-br text-white", placeholderGradient(seed), className)}>
       <ImageIcon aria-hidden className="absolute top-1/2 left-1/2 size-1/3 -translate-x-1/2 -translate-y-1/2 opacity-25" />
       {index !== undefined && (
         <span className="absolute top-1.5 left-1.5 grid size-5 place-items-center rounded-md bg-black/45 text-[10px] font-bold backdrop-blur-sm">
@@ -89,7 +89,7 @@ export function PosterPlaceholder({
       )}
       <div aria-hidden className="grid gap-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className={cn("aspect-[3/4] rounded-md bg-gradient-to-br", placeholderGradient(`${seed}-${i}`))} />
+          <div key={i} className={cn("aspect-[200/325] rounded-md bg-gradient-to-br", placeholderGradient(`${seed}-${i}`))} />
         ))}
       </div>
       {template === "b" && (

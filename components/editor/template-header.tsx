@@ -5,7 +5,7 @@ import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { exportSafeSrc } from "@/lib/media-url";
 import { SAMPLE_RANK, rankImage, type RankId } from "@/lib/ranks";
-import { TOKENS, customerCanUpload, renderTokens, type Layer, type TemplateSetting, type TokenValues } from "@/lib/templates";
+import { TOKENS, customerCanUpload, resolveBanner, renderTokens, type Layer, type TemplateSetting, type TokenValues } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import type { Decoration } from "@/stores/editor-store";
 
@@ -54,7 +54,7 @@ export function TemplateHeader({ setting, decoration, game, skinIds, sample, edi
   const cover = skins.find((s) => s.id === d.coverId) ?? [...skins].sort((a, b) => b.tierRank - a.tierRank)[0];
 
   // แบบ banner ที่เปิดให้ลูกค้าเปลี่ยนพื้นหลัง: ใช้รูปลูกค้าถ้ามี ไม่งั้นใช้ภาพของแอดมิน
-  const image = setting.kind === "banner" ? (customerCanUpload(setting) && d.banner) || setting.banner : d.banner;
+  const image = resolveBanner(setting.kind === "banner" ? (customerCanUpload(setting) && d.banner) || setting.banner : d.banner);
 
   const layer = (l: Layer) => {
     const selected = editor?.selected === l.id;
@@ -88,20 +88,25 @@ export function TemplateHeader({ setting, decoration, game, skinIds, sample, edi
     if (!cover) return null;
     return (
       // eslint-disable-next-line @next/next/no-img-element -- html-to-image needs a plain <img>
-      <img key={l.id} {...common} src={exportSafeSrc(cover.image)} alt="" draggable={false} style={{ ...box, aspectRatio: "3 / 4", borderRadius: `${l.radius}cqw` }} className={cn(common.className, "object-cover")} />
+      <img key={l.id} {...common} src={exportSafeSrc(cover.image)} alt="" draggable={false} style={{ ...box, aspectRatio: "200 / 325", borderRadius: `${l.radius}cqw` }} className={cn(common.className, "object-cover")} />
     );
   };
 
   return (
-    <div className="relative">
+    <div className="relative bg-zinc-950">
+      {/* พื้นหลัง texture ของทุกแบบ (โผล่ผ่านส่วนโปร่งใสของแบนเนอร์ที่อัปโหลด) */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- html-to-image needs a plain <img> */}
+      <img src="/poster-bg.jpg" alt="" draggable={false} className="pointer-events-none absolute inset-0 size-full object-cover select-none" />
       {setting.kind === "banner" && !image ? (
-        // แบบที่ไม่ได้ใช้ภาพ: พื้นไล่สีเข้ม ใช้สีไฮไลต์ของลูกค้าเป็นแสง
-        <div className="aspect-[16/9] w-full" style={{ background: `radial-gradient(120% 90% at 85% 10%, color-mix(in oklab, ${accent} 35%, transparent), transparent 60%), linear-gradient(135deg, #1e1b4b, #09090b 70%)` }} />
+        // แบบที่ไม่ได้ใช้ภาพ: พื้น texture ดำ + แสงสีไฮไลต์ของลูกค้า
+        <div className="relative aspect-[16/9] w-full overflow-hidden">
+          <div aria-hidden className="absolute inset-0" style={{ background: `radial-gradient(120% 90% at 85% 10%, color-mix(in oklab, ${accent} 30%, transparent), transparent 60%)` }} />
+        </div>
       ) : image ? (
         // eslint-disable-next-line @next/next/no-img-element -- admin/customer upload on R2, html-to-image needs a plain <img>
-        <img src={exportSafeSrc(image)} alt="" draggable={false} className="pointer-events-none block h-auto w-full select-none" />
+        <img src={exportSafeSrc(image)} alt="" draggable={false} className="pointer-events-none relative block h-auto w-full select-none" />
       ) : (
-        <div data-export-watermark className="grid aspect-[16/7] place-items-center border-b border-dashed border-white/25 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.04)_0_10px,transparent_10px_20px)] text-center">
+        <div data-export-watermark className="relative grid aspect-[16/7] place-items-center border-b border-dashed border-white/25 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.04)_0_10px,transparent_10px_20px)] text-center">
           <div className="flex flex-col items-center gap-[1.2cqw] px-[6%]">
             <ImagePlus className="size-[clamp(20px,7cqw,40px)] text-white/45" aria-hidden />
             <p className="text-[clamp(11px,3.4cqw,18px)] font-semibold text-white/70">พื้นที่แบนเนอร์ของคุณ</p>

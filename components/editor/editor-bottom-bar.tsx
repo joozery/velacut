@@ -76,6 +76,7 @@ export function EditorBottomBar() {
             <span aria-hidden className="hidden h-8 w-px bg-border sm:block" />
             <LayoutSelect
               cols={viewCols}
+              count={skins.length}
               onChange={(cols) => useEditorStore.getState().setViewCols(game.slug, cols)}
               disabled={!hydrated}
               placeholder={c.layout}

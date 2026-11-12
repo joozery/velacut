@@ -22,3 +22,11 @@ export function resolveLayout(n: number, preferredCols: number | null): GridLayo
   if (!opts.length) return null;
   return opts.find((o) => o.cols === preferredCols) ?? opts[0];
 }
+
+/** ตัวเลือก layout ทุกจำนวนคอลัมน์ min..max พร้อมจำนวนแถวที่ได้ (exact = เต็มทุกช่องพอดี) */
+export function gridOptions(n: number, min: number, max: number) {
+  return Array.from({ length: max - min + 1 }, (_, i) => {
+    const cols = min + i;
+    return { cols, rows: Math.ceil(n / cols), exact: n > 0 && n % cols === 0 };
+  });
+}

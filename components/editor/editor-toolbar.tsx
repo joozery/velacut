@@ -1,14 +1,15 @@
 "use client";
 
-import { Grid2x2, Grid3x3, LayoutGrid, Redo2, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { Grid3x3, LayoutGrid, Redo2, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip } from "@/components/ui/tooltip";
 import { copy } from "@/lib/copy";
 import type { GameSlug } from "@/lib/games";
 import { cn, fmt } from "@/lib/utils";
 import { VIEW_COLS_MAX, VIEW_COLS_MIN, useEditorStore } from "@/stores/editor-store";
 import { toast } from "@/stores/toast-store";
+import { gridOptions } from "@/lib/grid-layout";
 import { useGrid } from "./use-grid";
 import { useEditorStep } from "./use-editor-step";
 
@@ -64,21 +65,21 @@ function GridTools({ game }: { game: GameSlug }) {
       <Divider />
       <LabeledAction label="เรียงสกิน" icon={<Sparkles aria-hidden />} onClick={sort} disabled={!hydrated || skins.length < 2} />
       <LabeledAction label={t.clear} icon={<Trash2 aria-hidden />} onClick={clear} disabled={!hydrated || empty} />
-      {/* จำนวนคอลัมน์ในพื้นที่ทำงาน */}
-      <div className="ml-2 hidden h-9 w-52 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface-2/50 px-3 md:flex" title={t.columns}>
-        <Grid2x2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <Slider
-          value={[viewCols]}
-          onValueChange={([v]) => s().setViewCols(game, v)}
-          min={VIEW_COLS_MIN}
-          max={VIEW_COLS_MAX}
-          step={1}
-          thumbLabel={t.columns}
-          disabled={!hydrated}
-        />
-        <Grid3x3 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="w-5 text-right text-sm font-semibold tabular-nums">{viewCols}</span>
-      </div>
+      {/* layout ของพื้นที่ทำงาน: คอลัมน์ × แถว เช่น 6×6, 12×4 */}
+      <Select value={String(viewCols)} onValueChange={(v) => s().setViewCols(game, Number(v))} disabled={!hydrated}>
+        <SelectTrigger size="sm" aria-label={t.columns} title={t.columns} className="ml-2 w-auto shrink-0 gap-1.5 bg-surface tabular-nums">
+          <Grid3x3 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-80 overflow-y-auto">
+          {gridOptions(skins.length, VIEW_COLS_MIN, VIEW_COLS_MAX).map(({ cols, rows, exact }) => (
+            <SelectItem key={cols} value={String(cols)} className="tabular-nums">
+              {rows ? `${cols} × ${rows}` : `${cols} คอลัมน์`}
+              {exact && <span className="ml-2 text-[10px] text-primary">พอดี</span>}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </>
   );
 }

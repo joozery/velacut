@@ -32,7 +32,7 @@ function Sketch({ kind, active }: { kind: TemplateKind; active: boolean }) {
           <ImagePlus className="size-3" />
         </span>
       )}
-      <span className="grid flex-1 grid-cols-4 gap-0.5">{Array.from({ length: kind === "grid" ? 16 : 8 }, (_, i) => <span key={i} className={cn(cell, "aspect-[3/4]")} />)}</span>
+      <span className="grid flex-1 grid-cols-4 gap-0.5">{Array.from({ length: kind === "grid" ? 16 : 8 }, (_, i) => <span key={i} className={cn(cell, "aspect-[200/325]")} />)}</span>
     </span>
   );
 }
