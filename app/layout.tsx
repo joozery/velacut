@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
+import localFont from "next/font/local";
 import { Providers } from "@/components/shared/providers";
 import { copy } from "@/lib/copy";
 import { getAppearanceSafe } from "@/lib/server/appearance";
@@ -9,10 +9,11 @@ import { TemplatesProvider } from "@/components/shared/templates-provider";
 import { getTemplatesSafe } from "@/lib/server/templates";
 import "./globals.css";
 
-const font = Noto_Sans_Thai({
+// Self-hosted so builds don't depend on fetching from Google Fonts.
+const font = localFont({
+  src: "./fonts/NotoSansThai-Variable.woff2",
   variable: "--font-thai",
-  subsets: ["thai", "latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "100 900",
   display: "swap",
 });
 

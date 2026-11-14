@@ -3,7 +3,7 @@
 import { useId, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Anton } from "next/font/google";
+import localFont from "next/font/local";
 import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import { copy } from "@/lib/copy";
@@ -12,7 +12,7 @@ import { cn, fmt } from "@/lib/utils";
 import { useAppearance } from "@/components/shared/appearance-provider";
 
 /** ฟอนต์ display สำหรับ wordmark (ละตินเท่านั้น — ข้อความไทยยังใช้ Noto Sans Thai) */
-const display = Anton({ subsets: ["latin"], weight: "400", display: "swap" });
+const display = localFont({ src: "../../app/fonts/Anton-Regular.woff2", weight: "400", display: "swap" });
 const h = copy.landing.hero;
 
 function HeroCta({ href, icon, label, variant }: { href: string; icon: React.ReactNode; label: string; variant: "primary" | "ghost" }) {
