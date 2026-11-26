@@ -4,7 +4,7 @@ import { useRef, useState, type ComponentProps } from "react";
 import { createPortal } from "react-dom";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { renderPoster, savePoster } from "@/lib/poster-download";
+import { exportWidth, renderPoster, savePoster } from "@/lib/poster-download";
 import type { PosterOrder } from "@/lib/account";
 import { toast } from "@/stores/toast-store";
 import { PosterPreview } from "./poster-preview";
@@ -28,5 +28,5 @@ export function OrderDownload({ order, label = "ดาวน์โหลดซ�
       toast({ title: "ดาวน์โหลดไม่สำเร็จ", description: e instanceof Error ? e.message : "กรุณาลองใหม่", variant: "error" });
     } finally { lock.current = false; setBusy(false); }
   };
-  return <><Button disabled={busy} onClick={download} className={className} variant={variant} size={size} aria-label={label === "" ? "ดาวน์โหลด PNG" : undefined}>{busy ? <Loader2 className="animate-spin" /> : <Download />}{label}</Button>{busy && createPortal(<div aria-hidden ref={ref} className="pointer-events-none fixed top-0 left-[-20000px] w-[1080px]"><PosterPreview game={order.game} skinIds={order.doc.skins} cols={order.cols} template={order.doc.template} decoration={{ ...DEFAULT_DECORATION, ...order.doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}</>;
+  return <><Button disabled={busy} onClick={download} className={className} variant={variant} size={size} aria-label={label === "" ? "ดาวน์โหลด PNG" : undefined}>{busy ? <Loader2 className="animate-spin" /> : <Download />}{label}</Button>{busy && createPortal(<div aria-hidden ref={ref} className="pointer-events-none fixed top-0 left-[-20000px]" style={{ width: exportWidth(order.cols, order.doc.skins.length) }}><PosterPreview game={order.game} skinIds={order.doc.skins} cols={order.cols} template={order.doc.template} decoration={{ ...DEFAULT_DECORATION, ...order.doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}</>;
 }

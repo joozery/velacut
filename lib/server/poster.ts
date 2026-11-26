@@ -1,3 +1,4 @@
+import { REWARD_ID_RE } from "@/lib/rewards";
 import { MongoServerError } from "mongodb";
 import { getCatalog, type Catalog } from "@/lib/catalog";
 import { GAME_SLUGS, type GameSlug } from "@/lib/games";
@@ -23,12 +24,13 @@ function sanitizeDecoration(raw: unknown): Decoration | undefined {
   const isRank = (v: unknown): v is NonNullable<Decoration["rank"]> => RANKS.some((r) => r.id === v);
   const rank = isRank(d.rank) ? d.rank : undefined;
   const peakRank = isRank(d.peakRank) ? d.peakRank : undefined;
+  const reward = typeof d.reward === "string" && REWARD_ID_RE.test(d.reward) ? d.reward : undefined;
   // แบนเนอร์รับเฉพาะรูปที่อัปโหลดผ่านระบบเรา
   const banner = typeof d.banner === "string" && isUploadedUrl(d.banner, "banners") ? d.banner : undefined;
   return {
     code: str(d.code, 40), heroes: num(d.heroes, 9999), price: num(d.price), winrate: num(d.winrate, 100), matches: num(d.matches),
     down: num(d.down), honor: num(d.honor), tagline: str(d.tagline, 120), accent: /^#[0-9a-f]{6}$/i.test(String(d.accent)) ? String(d.accent) : "#fcd34d",
-    coverId: str(d.coverId, 120), ...(rank ? { rank } : {}), ...(peakRank ? { peakRank } : {}), ...(banner ? { banner } : {}),
+    coverId: str(d.coverId, 120), ...(rank ? { rank } : {}), ...(peakRank ? { peakRank } : {}), ...(reward ? { reward } : {}), ...(banner ? { banner } : {}),
   };
 }
 

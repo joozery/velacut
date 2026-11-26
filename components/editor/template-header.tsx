@@ -4,6 +4,8 @@ import { ImagePlus } from "lucide-react";
 import { useCatalog } from "@/components/shared/catalog-provider";
 import type { GameSlug } from "@/lib/games";
 import { exportSafeSrc } from "@/lib/media-url";
+import { sampleReward } from "@/lib/rewards";
+import { useRewards } from "@/components/shared/rewards-provider";
 import { SAMPLE_RANK, rankImage, type RankId } from "@/lib/ranks";
 import { TOKENS, customerCanUpload, resolveBanner, renderTokens, type Layer, type TemplateSetting, type TokenValues } from "@/lib/templates";
 import { cn } from "@/lib/utils";
@@ -41,6 +43,7 @@ export function TemplateHeader({ setting, decoration, game, skinIds, sample, edi
   editor?: LayerEditor;
 }) {
   const cat = useCatalog(game);
+  const rewards = useRewards();
   if (setting.kind === "grid") return null;
   const d = decoration ?? {};
   const accent = d.accent || DEFAULT_ACCENT;
@@ -80,6 +83,12 @@ export function TemplateHeader({ setting, decoration, game, skinIds, sample, edi
     }
     const box = { left: `${l.x}%`, top: `${l.y}%`, width: `${l.size}cqw`, transform: "translate(-50%,-50%)" };
     if (l.type === "rank") {
+      if (l.source === "reward") {
+        const r = rewards.find((x) => x.id === d.reward) ?? (sample || editor ? sampleReward(rewards) : undefined);
+        if (!r) return null;
+        // eslint-disable-next-line @next/next/no-img-element -- html-to-image needs a plain <img>
+        return <img key={l.id} {...common} src={exportSafeSrc(r.image)} alt="" draggable={false} style={box} className={cn(common.className, "h-auto")} />;
+      }
       const id = ranks[l.source];
       if (!id) return null;
       // eslint-disable-next-line @next/next/no-img-element -- html-to-image needs a plain <img>

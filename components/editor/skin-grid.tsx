@@ -28,6 +28,8 @@ import { useEditorStore } from "@/stores/editor-store";
 const g = copy.editor.grid;
 /** มือถือแสดงได้สูงสุดเท่านี้คอลัมน์ ไม่งั้นการ์ดเล็กเกินไป */
 const MOBILE_MAX_COLS = 4;
+/** ความกว้างขั้นต่ำของการ์ดสกินในพื้นที่ทำงาน */
+const MIN_CARD_PX = 76;
 
 /** true เมื่อจอกว้างตั้งแต่ sm (640px) — กริดเรนเดอร์หลัง hydrate อยู่แล้วจึงไม่มีปัญหา SSR */
 function useIsWide() {
@@ -69,7 +71,7 @@ function SortableCard({ skin, index, onRemove }: { skin: Skin; index: number; on
         onClick={onRemove}
         aria-label={fmt(g.remove, { name: skin.name })}
         className={cn(
-          "absolute top-1.5 right-1.5 z-10 grid size-7 place-items-center rounded-full bg-black/60 text-white shadow-soft backdrop-blur-sm transition-opacity",
+          "absolute top-1 right-1 z-10 grid size-6 place-items-center rounded-full bg-black/60 text-white shadow-soft backdrop-blur-sm transition-opacity",
           "hover:bg-danger hover:text-white focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring",
           // อุปกรณ์ที่มีเมาส์: โชว์ตอนชี้ / จอสัมผัส: โชว์ตลอด
           "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100",
@@ -121,13 +123,16 @@ export function SkinGrid({ game, skins, viewCols }: { game: GameSlug; skins: str
       accessibility={{ announcements, screenReaderInstructions: { draggable: g.dndInstructions } }}
     >
       <SortableContext items={skins} strategy={rectSortingStrategy}>
-        <ul className={cn("grid w-full", cols > 10 ? "gap-1.5 sm:gap-2" : "gap-2.5 sm:gap-4")} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        {/* การ์ดไม่เล็กกว่า MIN_CARD_PX — คอลัมน์เยอะจนเกินความกว้างจะเลื่อนแนวนอนแทนการบีบจนมองไม่เห็น */}
+        <div className="overflow-x-auto overscroll-x-contain pb-2">
+        <ul className={cn("grid w-full", cols > 10 ? "gap-1.5 sm:gap-2" : "gap-2.5 sm:gap-4")} style={{ gridTemplateColumns: `repeat(${cols}, minmax(${MIN_CARD_PX}px, 1fr))` }}>
           {skins.map((id, i) => {
             const skin = skinById.get(id);
             if (!skin) return null;
             return <SortableCard key={id} skin={skin} index={i + 1} onRemove={() => removeSkin(game, id)} />;
           })}
         </ul>
+        </div>
       </SortableContext>
     </DndContext>
   );

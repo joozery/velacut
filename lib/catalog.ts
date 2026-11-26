@@ -36,6 +36,8 @@ export type Catalog = {
   skins: Skin[];
   skinById: Map<string, Skin>;
   heroById: Map<string, Hero>;
+  /** ลำดับสกินที่แอดมินจัดไว้ (id → ตำแหน่ง) — ใช้กับปุ่ม "เรียงสกิน" */
+  order?: Map<string, number>;
 };
 
 const RAW: Record<LibraryGame, CatalogFile> = { mlbb: mlbbData };
@@ -115,7 +117,7 @@ export function featuredFromCatalog(c: Catalog, count: number, minRank = 3): Ski
 
 export type ManagedHero = { id: string; name: string; image?: string; active: boolean; updatedAt: string };
 export type ManagedSkin = { id: string; heroId: string; name: string; tier: string; label?: string; image: string; active: boolean; updatedAt: string };
-export type CatalogChanges = { heroes: ManagedHero[]; skins: ManagedSkin[] };
+export type CatalogChanges = { heroes: ManagedHero[]; skins: ManagedSkin[]; skinOrder?: string[] };
 
 export function managedImage(kind: "hero" | "skin", id: string, version: string) {
   return `/api/catalog/images/${kind}/${encodeURIComponent(id)}?v=${encodeURIComponent(version)}`;
@@ -137,5 +139,16 @@ export function mergeCatalog(base: Catalog, changes: CatalogChanges, includeHidd
     if (hero && (includeHidden || (skin.active && hero.active))) hero.skinIds.push(skin.id);
   }
   const list = [...skins.values()].filter(s => includeHidden || (s.active && heroes.get(s.heroId)?.active));
-  return { ...base, source: "managed-library", skins: list, heroes: [...heroes.values()].filter(h => includeHidden || (h.active && h.skinIds.length > 0)).sort((a,b) => compareText(a.name,b.name)), skinById: skins, heroById: heroes };
+  return { ...base, source: "managed-library", skins: list, heroes: [...heroes.values()].filter(h => includeHidden || (h.active && h.skinIds.length > 0)).sort((a,b) => compareText(a.name,b.name)), skinById: skins, heroById: heroes, order: new Map((changes.skinOrder ?? []).map((id, i) => [id, i])) };
+}
+
+/** ลำดับตั้งต้น: ระดับสูงก่อน แล้วตามลำดับในคลัง */
+export const defaultSkinOrder = (skins: Skin[]) => skins.map((s, i) => ({ id: s.id, i, r: s.tierRank })).sort((a, b) => b.r - a.r || a.i - b.i).map((x) => x.id);
+
+/** ลำดับสกินทั้งหมดตามที่แอดมินจัด (สกินที่ยังไม่ได้จัดต่อท้ายตามลำดับตั้งต้น) */
+export function orderedSkinIds(skins: Skin[], saved: string[] = []) {
+  const all = new Set(skins.map((s) => s.id));
+  const first = saved.filter((id) => all.has(id));
+  const have = new Set(first);
+  return [...first, ...defaultSkinOrder(skins).filter((id) => !have.has(id))];
 }

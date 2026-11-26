@@ -25,6 +25,8 @@ export type Decoration = {
   rank?: RankId;
   /** แรงค์สูงสุดที่เคยได้ (ใช้กับแบบที่วางตรา "แรงค์สูงสุด") */
   peakRank?: RankId;
+  /** ตรารีวอร์ดคะแนนสกิน — ไม่เลือก = ไม่แสดง */
+  reward?: string;
   /** เทมเพลต B: แบนเนอร์ของลูกค้าเอง (URL รูปที่อัปโหลดขึ้น R2) */
   banner?: string;
 };
@@ -56,7 +58,7 @@ export type GameEditorState = {
 const HISTORY_LIMIT = 50;
 export const DEFAULT_VIEW_COLS = 6;
 export const VIEW_COLS_MIN = 2;
-export const VIEW_COLS_MAX = 16;
+export const VIEW_COLS_MAX = 40;
 
 const EMPTY_DOC: EditorDoc = { skins: [], cols: null, template: "none" };
 export const EMPTY_GAME_STATE: GameEditorState = { doc: EMPTY_DOC, past: [], future: [], viewCols: DEFAULT_VIEW_COLS };
@@ -154,12 +156,14 @@ export const useEditorStore = create<EditorStore>()(
 
         /** "AI เรียง": tier สูงก่อน, tier เท่ากันคงลำดับเดิม (stable sort) */
         sortByTier: (game) => {
-          const { skinById } = getCatalog(game);
+          const { skinById, order } = getCatalog(game);
+          // เรียงตามลำดับที่แอดมินจัดไว้ ตัวที่ไม่อยู่ในลำดับไปท้าย (ระดับสูงก่อน)
+          const pos = (id: string) => order?.get(id) ?? Number.MAX_SAFE_INTEGER;
           commit(game, (d) => ({
             ...d,
             skins: d.skins
-              .map((id, i) => ({ id, i, rank: skinById.get(id)?.tierRank ?? 0 }))
-              .sort((a, b) => b.rank - a.rank || a.i - b.i)
+              .map((id, i) => ({ id, i, p: pos(id), rank: skinById.get(id)?.tierRank ?? 0 }))
+              .sort((a, b) => a.p - b.p || b.rank - a.rank || a.i - b.i)
               .map((x) => x.id),
           }));
         },

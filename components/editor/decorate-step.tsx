@@ -16,6 +16,7 @@ import type { GameSlug } from "@/lib/games";
 import { DEFAULT_DECORATION, useEditorStore, useGameEditor, type Decoration } from "@/stores/editor-store";
 import { PosterPreview } from "./poster-preview";
 import { RankPicker } from "./rank-picker";
+import { RewardPicker } from "./reward-picker";
 import { useGrid } from "./use-grid";
 import { useRequireSkins } from "./use-step-guard";
 
@@ -25,9 +26,10 @@ const AUTO_COVER = "__auto__";
 const tools = [{ id: "text", label: "ข้อความ", icon: Type }, { id: "template", label: "แบบป้าย", icon: LayoutTemplate }, { id: "cover", label: "หน้าปก", icon: ImagePlus }, { id: "color", label: "สี", icon: Palette }] as const;
 
 const fields = [
-  ["heroes", "จำนวนฮีโร่"], ["price", "ราคาขาย (บาท)"],
+  ["heroes", "จำนวนฮีโร่"], ["skins", "จำนวนสกิน"],
+  ["price", "ราคาขาย (บาท)"], ["down", "ราคาดาวน์ (บาท)"],
   ["winrate", "อัตราชนะ (%)"], ["matches", "จำนวนแมตช์"],
-  ["down", "เงินดาวน์ (บาท)"], ["honor", "คะแนนสะสม"],
+  ["honor", "คะแนนสกิน"],
 ] as const;
 
 export function DecorateStep({ game }: { game: GameSlug }) {
@@ -51,7 +53,7 @@ export function DecorateStep({ game }: { game: GameSlug }) {
   const uses = templateUses(tplCfg[doc.template]);
   const canUpload = customerCanUpload(tplCfg[doc.template]);
   const numFields = fields.filter(([key]) => uses.tokens.has(key));
-  const hasText = uses.tokens.has("code") || uses.tokens.has("tagline") || numFields.length > 0 || uses.rank || uses.peakRank;
+  const hasText = uses.tokens.has("code") || uses.tokens.has("tagline") || numFields.length > 0 || uses.rank || uses.peakRank || uses.reward;
   const sectionsFor = (tool?: Tool) => ({ text: (!tool || tool === "text") && hasText, cover: (!tool || tool === "cover") && uses.cover, color: (!tool || tool === "color") && uses.accent });
 
   const poster = <PosterPreview game={game} skinIds={skins} cols={viewCols} template={doc.template} decoration={decoration} />;
@@ -73,12 +75,16 @@ export function DecorateStep({ game }: { game: GameSlug }) {
           {show.text && <>
             {uses.tokens.has("code") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-code`}>ชื่อป้าย / รหัสไอดี</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-code`} value={decoration.code} maxLength={40} placeholder="เช่น ไอดี MLBB 001" onChange={(e) => patch({ code: e.target.value })} /></div>}
             {numFields.length > 0 && <div className="grid grid-cols-2 gap-3">
-              {numFields.map(([key, label]) => <div key={key} className="grid gap-2">
+              {numFields.map(([key, label]) => <div key={key} className={key === "honor" ? "col-span-2 grid gap-2" : "grid gap-2"}>
                 <Label htmlFor={`${prefix}-decorate-${key}`} className="text-xs">{label}</Label>
-                <Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-${key}`} type="number" min={0} max={key === "winrate" ? 100 : undefined} step={key === "winrate" ? 0.01 : 1} value={decoration[key] || ""} placeholder="0" onChange={(e) => patch({ [key]: Math.min(key === "winrate" ? 100 : Number.MAX_SAFE_INTEGER, Math.max(0, Number(e.target.value) || 0)) })} />
+                {key === "skins"
+                  ? <Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-${key}`} value={skins.length} readOnly aria-describedby={`${prefix}-decorate-skins-hint`} />
+                  : <Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-${key}`} type="number" min={0} max={key === "winrate" ? 100 : undefined} step={key === "winrate" ? 0.01 : 1} value={decoration[key] || ""} placeholder="0" onChange={(e) => patch({ [key]: Math.min(key === "winrate" ? 100 : Number.MAX_SAFE_INTEGER, Math.max(0, Number(e.target.value) || 0)) })} />}
+                {key === "skins" && <p id={`${prefix}-decorate-skins-hint`} className="text-[10px] text-muted-foreground">นับจากสกินที่เลือกอัตโนมัติ</p>}
               </div>)}
             </div>}
             {uses.tokens.has("tagline") && <div className="grid gap-2"><Label htmlFor={`${prefix}-decorate-tagline`}>ข้อความเพิ่มเติม</Label><Input className="h-12 text-base sm:text-sm" id={`${prefix}-decorate-tagline`} value={decoration.tagline} maxLength={60} onChange={(e) => patch({ tagline: e.target.value })} /></div>}
+            {uses.reward && <RewardPicker id={`${prefix}-decorate-reward`} value={decoration.reward} onChange={(reward) => patch({ reward })} />}
             {uses.rank && <RankPicker id={`${prefix}-decorate-rank`} label={uses.peakRank ? "แรงค์ปัจจุบัน" : undefined} value={decoration.rank} onChange={(rank) => patch({ rank })} />}
             {uses.peakRank && <RankPicker id={`${prefix}-decorate-peak-rank`} label="แรงค์สูงสุด" hint="แรงค์สูงสุดที่ไอดีนี้เคยได้" value={decoration.peakRank} onChange={(peakRank) => patch({ peakRank })} />}
           </>}

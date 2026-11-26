@@ -3,7 +3,7 @@
  */
 export const PRICE_PER_SKIN = 0.3;
 export const MIN_SKINS = 4;
-export const MAX_SKINS = 60;
+export const MAX_SKINS = 400;
 
 /** id แบบป้าย — แบบมาตรฐาน none / a / b + แบบที่แอดมินสร้างเองในหลังบ้าน */
 export type TemplateId = string;

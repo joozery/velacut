@@ -11,8 +11,9 @@ const cols = async () => { const db = await getDb(); return { heroes: db.collect
 
 export const getCatalogChanges = cache(async (): Promise<CatalogChanges> => {
   const { heroes, skins } = await cols();
-  const [h, s] = await Promise.all([heroes.find().toArray(), skins.find().toArray()]);
+  const [h, s, orderDoc] = await Promise.all([heroes.find().toArray(), skins.find().toArray(), (await getDb()).collection<{ _id: string; value: string[] }>("settings").findOne({ _id: "skin_order" })]);
   return {
+    skinOrder: orderDoc?.value ?? [],
     heroes: h.map(row => ({ id: row._id, name: row.name, image: row.image, active: row.active, updatedAt: row.updatedAt.toISOString() })),
     skins: s.map(row => ({ id: row._id, heroId: row.heroId, name: row.name, tier: row.tier, label: row.label, image: row.image, active: row.active, updatedAt: row.updatedAt.toISOString() })),
   };
@@ -86,4 +87,12 @@ export async function listLibrary(opts: { kind?: string; q?: string; hero?: stri
   const pages = Math.max(1, Math.ceil(filtered.length / 24));
   const page = Math.min(pages, Math.max(1, Math.floor(Number(opts.page)) || 1));
   return { kind, rows: filtered.slice((page - 1) * 24, page * 24), total: filtered.length, pages, page, heroes: all.heroes.map(h => ({ id: h.id, name: h.name, active: h.active !== false })), stats: { heroes: all.heroes.length, skins: all.skins.length, uploaded: changes.skins.filter(s => isUploadedUrl(s.image, "catalog")).length } };
+}
+
+/** บันทึกลำดับสกินทั้งชุด (ใช้กับปุ่ม "เรียงสกิน" ฝั่งลูกค้า) */
+export async function saveSkinOrder(raw: unknown, by: string) {
+  if (!Array.isArray(raw) || raw.length > 20000) throw new UserError("รูปแบบลำดับไม่ถูกต้อง");
+  const ids = [...new Set(raw.filter((id): id is string => validId(id)))];
+  await (await getDb()).collection("settings").updateOne({ _id: "skin_order" } as never, { $set: { value: ids, updatedAt: new Date(), updatedBy: by } }, { upsert: true });
+  return ids.length;
 }

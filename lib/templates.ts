@@ -39,8 +39,8 @@ export type TextLayer = LayerBase & {
 };
 export type RankLayer = LayerBase & {
   type: "rank";
-  /** rank = แรงค์ปัจจุบัน · peakRank = แรงค์สูงสุด */
-  source: "rank" | "peakRank";
+  /** rank = แรงค์ปัจจุบัน · peakRank = แรงค์สูงสุด · reward = ตรารีวอร์ดคะแนนสกิน */
+  source: "rank" | "peakRank" | "reward";
   /** ความกว้างตราแรงค์ เป็น % ของความกว้างป้าย */
   size: number;
 };
@@ -138,15 +138,15 @@ export function renderTokens(text: string, values: TokenValues): { text: string;
 /** ช่องข้อมูลที่แบบนี้ใช้ — ใช้เลือกว่าจะให้ลูกค้ากรอกอะไรบ้างในขั้นตกแต่ง */
 export function templateUses(t: TemplateSetting | undefined) {
   const tokens = new Set<TokenKey>();
-  let rank = false, peakRank = false, cover = false, accent = false;
+  let rank = false, peakRank = false, reward = false, cover = false, accent = false;
   for (const l of t?.layers ?? []) {
     if (l.type === "text") {
       for (const m of l.text.matchAll(TOKEN_RE)) if (isToken(m[1])) tokens.add(m[1]);
       if (l.color === "accent" || l.valueColor === "accent" || l.strokeColor === "accent" || l.backgroundColor === "accent") accent = true;
-    } else if (l.type === "rank") { if (l.source === "peakRank") peakRank = true; else rank = true; }
+    } else if (l.type === "rank") { if (l.source === "peakRank") peakRank = true; else if (l.source === "reward") reward = true; else rank = true; }
     else cover = true;
   }
-  return { tokens, rank, peakRank, cover, accent, any: tokens.size > 0 || rank || peakRank || cover || accent };
+  return { tokens, rank, peakRank, reward, cover, accent, any: tokens.size > 0 || rank || peakRank || reward || cover || accent };
 }
 
 /* ───────────── ชิ้นส่วนเริ่มต้นสำหรับหลังบ้าน ───────────── */
@@ -179,7 +179,7 @@ export const velavutLayers = (): Layer[] => {
     text({ text: "Server: Thailand", x: 98, y: 5.5, size: 3.4, align: "right", color: "#ff9500" }),
     text({ text: "รหัสสินค้า {code}", x: 98, y: 13, size: 4, align: "right", valueColor: "#ff9500" }),
     text({ text: "{tagline}", x: 98, y: 20, size: 2.5, align: "right" }),
-    newRankLayer({ x: 79, y: 38, size: 15 }),
+    newRankLayer({ source: "reward", x: 79, y: 38, size: 11 }),
     text({ text: "{honor}", x: 79, y: 51, size: 4 }),
     newRankLayer({ x: 93, y: 29, size: 8 }),
     text({ text: "แรงค์ปัจจุบัน", x: 93, y: 37, size: 1.9 }),

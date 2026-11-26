@@ -17,6 +17,8 @@ import type { TopupConfig } from "@/lib/topup";
 import type { Appearance } from "@/lib/appearance";
 import { saveAppearance } from "@/lib/server/appearance";
 import { saveTemplates } from "@/lib/server/templates";
+import { saveRewards } from "@/lib/server/rewards";
+import type { Reward } from "@/lib/rewards";
 import type { TemplatesConfig } from "@/lib/templates";
 
 async function run(fn: () => Promise<void>, ...paths: string[]): Promise<ActionResult<null>> {
@@ -133,6 +135,14 @@ export async function saveTemplatesAction(input: unknown): Promise<ActionResult<
   const r = await run(async () => { const a = await requireAdmin(); saved = await saveTemplates(input, a.email); }, "/admin/templates");
   if (!r.ok) return r;
   // ชื่อ/ราคาแบบป้ายใช้ทั้งหน้าแรก (เครื่องคิดราคา) และ editor
+  revalidatePath("/", "layout");
+  return { ok: true, data: saved! };
+}
+
+export async function saveRewardsAction(input: unknown): Promise<ActionResult<Reward[]>> {
+  let saved: Reward[] | null = null;
+  const r = await run(async () => { const a = await requireAdmin(); saved = await saveRewards(input, a.email); }, "/admin/rewards");
+  if (!r.ok) return r;
   revalidatePath("/", "layout");
   return { ok: true, data: saved! };
 }

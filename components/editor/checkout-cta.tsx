@@ -17,7 +17,7 @@ import { DEFAULT_DECORATION, useGameEditor } from "@/stores/editor-store";
 import { useGrid } from "./use-grid";
 import { useAccountStore } from "@/stores/account-store";
 import { purchasePosterAction } from "@/app/actions/account";
-import { renderPoster, savePoster } from "@/lib/poster-download";
+import { exportWidth, renderPoster, savePoster } from "@/lib/poster-download";
 
 const c = copy.editor.checkout;
 
@@ -161,7 +161,7 @@ export function CheckoutCta({ game, disabled }: { game: GameSlug; disabled?: boo
           </>)}
         </DialogContent>
       </Dialog>
-      {exporting && createPortal(<div aria-hidden className="pointer-events-none fixed top-0 left-[-20000px] w-[1080px]" ref={exportRef}><PosterPreview game={game} skinIds={doc.skins} cols={viewCols} template={doc.template} decoration={{ ...DEFAULT_DECORATION, ...doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}
+      {exporting && createPortal(<div aria-hidden className="pointer-events-none fixed top-0 left-[-20000px]" style={{ width: exportWidth(viewCols, doc.skins.length) }} ref={exportRef}><PosterPreview game={game} skinIds={doc.skins} cols={viewCols} template={doc.template} decoration={{ ...DEFAULT_DECORATION, ...doc.decoration }} className="rounded-none shadow-none" /></div>, document.body)}
     </>
   );
 }

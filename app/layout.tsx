@@ -7,6 +7,8 @@ import { appearanceTokens } from "@/lib/appearance";
 import { AppearanceProvider } from "@/components/shared/appearance-provider";
 import { TemplatesProvider } from "@/components/shared/templates-provider";
 import { getTemplatesSafe } from "@/lib/server/templates";
+import { RewardsProvider } from "@/components/shared/rewards-provider";
+import { getRewardsSafe } from "@/lib/server/rewards";
 import "./globals.css";
 
 // Self-hosted so builds don't depend on fetching from Google Fonts.
@@ -34,7 +36,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [site, templates] = await Promise.all([getAppearanceSafe(), getTemplatesSafe()]);
+  const [site, templates, rewards] = await Promise.all([getAppearanceSafe(), getTemplatesSafe(), getRewardsSafe()]);
   const tokens = (color: string) => Object.entries(appearanceTokens(color)).map(([key, value]) => `${key}:${value}`).join(";");
   return (
     // ต้องใส่ font.variable ที่ <html> เพราะ --font-sans ถูกประกาศที่ :root และอ้าง var(--font-thai)
@@ -53,7 +55,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           >
             {copy.common.skipToContent}
           </a>
-          <AppearanceProvider value={site}><TemplatesProvider value={templates}><Providers>{children}</Providers></TemplatesProvider></AppearanceProvider>
+          <AppearanceProvider value={site}><TemplatesProvider value={templates}><RewardsProvider value={rewards}><Providers>{children}</Providers></RewardsProvider></TemplatesProvider></AppearanceProvider>
         </velacut-app>
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/server/session";
-import { saveLibraryItem } from "@/lib/server/catalog";
+import { saveLibraryItem, saveSkinOrder } from "@/lib/server/catalog";
 import { UserError } from "@/lib/server/poster";
 import type { ActionResult } from "@/lib/account";
 
@@ -18,5 +18,20 @@ export async function saveLibraryAction(kind: "hero" | "skin", item: unknown): P
     if (error instanceof UserError) return { ok: false, error: error.message };
     console.error("saveLibrary failed", error);
     return { ok: false, error: "บันทึกคลังไม่สำเร็จ กรุณาลองใหม่" };
+  }
+}
+
+export async function saveSkinOrderAction(ids: unknown): Promise<ActionResult<{ count: number }>> {
+  try {
+    const admin = await requireAdmin();
+    const count = await saveSkinOrder(ids, admin.email);
+    revalidatePath("/admin/skin-order");
+    revalidatePath("/", "layout");
+    revalidatePath("/generate/mlbb", "layout");
+    return { ok: true, data: { count } };
+  } catch (error) {
+    if (error instanceof UserError) return { ok: false, error: error.message };
+    console.error("saveSkinOrder failed", error);
+    return { ok: false, error: "บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่" };
   }
 }

@@ -16,7 +16,7 @@ const SAMPLE_ACCENT = "#fcd34d";
 const round = (n: number) => Math.round(n * 10) / 10;
 
 function layerTitle(l: Layer) {
-  if (l.type === "rank") return l.source === "peakRank" ? "ตราแรงค์สูงสุด" : "ตราแรงค์ปัจจุบัน";
+  if (l.type === "rank") return l.source === "peakRank" ? "ตราแรงค์สูงสุด" : l.source === "reward" ? "ตรารีวอร์ดคะแนนสกิน" : "ตราแรงค์ปัจจุบัน";
   if (l.type === "cover") return "ภาพหน้าปก (สกิน)";
   return l.text.replace(/\s+/g, " ").trim() || "ข้อความ";
 }
@@ -264,8 +264,8 @@ export function TemplateLayoutEditor({ open, onOpenChange, setting, onChange, sk
                 {sel.type === "rank" && <>
                   <div className="grid gap-1.5">
                     <Label className="text-xs">แสดงแรงค์</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {([["rank", "แรงค์ปัจจุบัน"], ["peakRank", "แรงค์สูงสุด"]] as const).map(([v, l]) => <button key={v} type="button" aria-pressed={sel.source === v} onClick={() => update(sel.id, { source: v })} className={cn("rounded-xl border px-2 py-2 text-xs font-medium", sel.source === v ? "border-primary bg-primary-soft text-primary" : "border-border text-muted-foreground")}>{l}</button>)}
+                    <div className="grid grid-cols-3 gap-2">
+                      {([["rank", "แรงค์ปัจจุบัน"], ["peakRank", "แรงค์สูงสุด"], ["reward", "รีวอร์ดสกิน"]] as const).map(([v, l]) => <button key={v} type="button" aria-pressed={sel.source === v} onClick={() => update(sel.id, { source: v })} className={cn("rounded-xl border px-2 py-2 text-xs font-medium", sel.source === v ? "border-primary bg-primary-soft text-primary" : "border-border text-muted-foreground")}>{l}</button>)}
                     </div>
                     <p className="text-[11px] text-muted-foreground">ลูกค้าเลือกแรงค์ในขั้นตกแต่ง ถ้าไม่เลือกจะไม่แสดงตรา</p>
                   </div>

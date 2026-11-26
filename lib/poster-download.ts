@@ -40,6 +40,9 @@ function getFontEmbedCSS() {
   return fontCSS;
 }
 
+/** ความกว้างภาพที่ส่งออก: 1080px ขั้นต่ำ — คอลัมน์เยอะขึ้นให้กว้างขึ้นตาม (≥90px ต่อสกิน, สูงสุด 3600px) เพื่อไม่ให้สกินเล็กจนอ่านไม่ออก */
+export const exportWidth = (cols: number, skinCount: number) => Math.min(3600, Math.max(1080, Math.min(cols, Math.max(1, skinCount)) * 90));
+
 export async function renderPoster(node: HTMLElement, watermark: boolean): Promise<Blob> {
   if (node.querySelector("[data-image-error]")) throw new Error("โหลดภาพสกินไม่สำเร็จ กรุณาลองใหม่");
   await document.fonts.ready;
@@ -47,8 +50,10 @@ export async function renderPoster(node: HTMLElement, watermark: boolean): Promi
     await img.decode();
     if (!img.naturalWidth) throw new Error("โหลดภาพสกินไม่สำเร็จ กรุณาลองใหม่");
   }));
+  // ข้อความ/ตรา/แบนเนอร์คมขึ้นเมื่อ render 2 เท่า — ลดลงถ้าภาพรวมใหญ่เกินที่ browser (โดยเฉพาะ Safari ~16 ล้านพิกเซล) รับได้
+  const pixelRatio = Math.min(2, Math.max(1, Math.sqrt(16_000_000 / Math.max(1, node.offsetWidth * node.offsetHeight))));
   const blob = await toBlob(node, {
-    pixelRatio: 1,
+    pixelRatio,
     fontEmbedCSS: await getFontEmbedCSS(),
     backgroundColor: "#09090b",
     filter: (element) => !(element instanceof HTMLElement && element.hasAttribute("data-export-watermark") && !watermark),

@@ -21,12 +21,13 @@ import { DemoGrid } from "./demo-grid";
 import { UiIcon } from "@/components/icons/ui-icon";
 import { HeroLenis } from "./hero-lenis";
 import { PriceCalculator } from "./price-calculator";
-import { CountUp, Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { copy } from "@/lib/copy";
 import { featuredFromCatalog } from "@/lib/catalog";
 import { getServerCatalogSafe as getServerCatalog } from "@/lib/server/catalog";
-import { GAMES, type GameConfig } from "@/lib/games";
-import { MOCK_STATS } from "@/lib/mock";
+import { GAMES } from "@/lib/games";
+import { getSiteStats } from "@/lib/server/stats";
+import { LiveCount } from "./live-count";
 import { cn, fmt } from "@/lib/utils";
 
 const L = copy.landing;
@@ -64,12 +65,6 @@ async function demoSkins(n: number) {
   return all.filter((_, i) => i % step === 0).slice(0, n);
 }
 
-const catalogStats = async (g: GameConfig) => {
-  if (g.mode !== "library") return null;
-  const c = await getServerCatalog();
-  return { heroes: c.heroes.length, skins: c.skins.length, preview: featuredFromCatalog(c, 9) };
-};
-
 /* ─────────────── Studio introduction ─────────────── */
 export async function Hero() {
   const catalog = await getServerCatalog();
@@ -78,22 +73,16 @@ export async function Hero() {
 }
 
 /* ─────────────── Stats ─────────────── */
-const STAT_ICONS = { users: "users", posters: "layout-grid", heroes: "swords", skins: "images" } as const;
+const STAT_ICONS = { users: "users", posters: "layout-grid" } as const;
 
 export async function Stats() {
-  const lib = (await Promise.all(GAMES.map(catalogStats))).filter(Boolean) as NonNullable<Awaited<ReturnType<typeof catalogStats>>>[];
-  const values: Record<string, number> = {
-    users: MOCK_STATS.users,
-    posters: MOCK_STATS.posters,
-    heroes: lib.reduce((n, s) => n + s.heroes, 0),
-    skins: lib.reduce((n, s) => n + s.skins, 0),
-  };
+  const values = await getSiteStats().catch(() => ({ users: 0, posters: 0 }));
   return (
     <section aria-label={fmt(L.stats.aria, { brand: copy.brand.name })} className="px-5 pt-8 pb-2 sm:px-10 sm:pt-10 sm:pb-4">
       <Stagger
         as="ul"
         gap={0.07}
-        className="mx-auto grid max-w-6xl grid-cols-2 overflow-hidden rounded-2xl border border-border bg-surface shadow-soft-sm lg:grid-cols-4"
+        className="mx-auto grid max-w-3xl grid-cols-2 overflow-hidden rounded-2xl border border-border bg-surface shadow-soft-sm"
       >
         {L.stats.items.map((s, i) => (
           <StaggerItem
@@ -101,10 +90,7 @@ export async function Stats() {
             key={s.key}
             className={cn(
               "group flex items-center gap-3 p-4 sm:gap-4 sm:p-6",
-              // เส้นคั่น: มือถือ 2×2 / จอใหญ่ 4 ช่องแนวนอน
-              i % 2 === 0 && "border-r border-border",
-              i < 2 && "border-b border-border lg:border-b-0",
-              i === 1 && "lg:border-r",
+              i === 0 && "border-r border-border",
             )}
           >
             <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary transition-transform duration-300 group-hover:-translate-y-0.5 sm:size-12">
@@ -112,8 +98,8 @@ export async function Stats() {
             </span>
             <div className="min-w-0">
               <p className="text-xl leading-none font-bold tracking-tight tabular-nums sm:text-[28px]">
-                <CountUp value={values[s.key]} />
-                {s.key === "users" || s.key === "posters" ? <span className="text-primary">+</span> : null}
+                <LiveCount stat={s.key} initial={values[s.key]} />
+                
               </p>
               <p className="mt-1.5 text-xs font-semibold sm:text-sm">{s.label}</p>
               <p className="mt-0.5 hidden truncate text-[11px] text-muted-foreground sm:block">{s.sub}</p>

@@ -43,7 +43,7 @@ function parseLayer(raw: unknown, label: string): Layer {
   const l = (raw ?? {}) as Record<string, unknown>;
   const id = typeof l.id === "string" && /^[\w-]{1,24}$/.test(l.id) ? l.id : Math.random().toString(36).slice(2, 10);
   const base = { id, x: clamp(l.x, -20, 120, 50), y: clamp(l.y, -20, 120, 50) };
-  if (l.type === "rank") return { ...base, type: "rank", source: l.source === "peakRank" ? "peakRank" : "rank", size: clamp(l.size, 2, 60, 14) };
+  if (l.type === "rank") return { ...base, type: "rank", source: l.source === "peakRank" || l.source === "reward" ? l.source : "rank", size: clamp(l.size, 2, 60, 14) };
   if (l.type === "cover") return { ...base, type: "cover", size: clamp(l.size, 4, 80, 22), radius: clamp(l.radius, 0, 50, 6) };
   if (l.type !== "text") throw new UserError(`ชิ้นส่วนบน${label}ไม่ถูกต้อง`);
   const body = String(l.text ?? "");
@@ -103,6 +103,13 @@ export function parseTemplates(raw: unknown): TemplatesConfig {
   return out;
 }
 
+/** แบบ Velavut รุ่นเก่า: ตราแรงค์ใหญ่ที่อยู่เหนือ {honor} = ตรารีวอร์ดคะแนนสกิน */
+const upgradeRewardLayers = (layers: Layer[]): Layer[] =>
+  layers.map((l, i) => {
+    const next = layers[i + 1];
+    return l.type === "rank" && l.source === "rank" && next?.type === "text" && next.text.trim() === "{honor}" ? { ...l, source: "reward", size: Math.round(l.size * 0.75 * 10) / 10 } : l;
+  });
+
 /** ค่าที่เก็บไว้ (อาจเป็นรุ่นเก่าที่ยังไม่มี kind/layers) + เติมแบบมาตรฐานที่ขาด */
 const merge = (value?: TemplatesConfig): TemplatesConfig => {
   const out: TemplatesConfig = {};
@@ -112,7 +119,7 @@ const merge = (value?: TemplatesConfig): TemplatesConfig => {
     const stored = value?.[id];
     out[id] = builtin
       ? { ...builtin, ...stored, kind: builtin.kind }
-      : { ...stored!, kind: stored?.kind ?? "banner", layers: stored?.layers ?? [] };
+      : { ...stored!, kind: stored?.kind ?? "banner", layers: upgradeRewardLayers(stored?.layers ?? []) };
   }
   return out;
 };

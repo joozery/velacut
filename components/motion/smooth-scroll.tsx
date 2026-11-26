@@ -18,12 +18,13 @@ const subscribe = (cb: () => void) => {
  */
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   const reduce = useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => true);
-  if (reduce) return <>{children}</>;
   return (
     <ReactLenis
       root
       options={{
         lerp: 0.1,
+        // keep the same tree on server and client (useId stays stable); reduce-motion just turns smoothing off
+        smoothWheel: !reduce,
         anchors: { offset: -80 },
         prevent: (node) => !!node.closest?.("[role=dialog], [data-radix-scroll-area-viewport], [data-lenis-prevent]"),
       }}
